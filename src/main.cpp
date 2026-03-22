@@ -1767,7 +1767,7 @@ controlarTanque();
 
 
 /* Apaga todos los RELE si se mantiene presionado */
-if(digitalRead(BottOFF) == LOW && millis() - debounceOFF > 500){
+if(digitalRead(BottOFF) == LOW && millis() - debounceOFF > 300){
 
   debounceOFF = millis();
 
@@ -1794,4 +1794,3 @@ if (digitalRead(Bottreset) == LOW) {
 }
 
 }
-
