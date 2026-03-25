@@ -5,24 +5,39 @@
 #include <Preferences.h>
 #include <time.h>
 #include <DHT.h>
-#define DHTPIN 15
 #define DHTTYPE DHT22
 #define MAX_HORARIOS 5
-#define SENSOR_TANQUE 27
 #define MAX_USERS 5
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+#define MAX_EVENTOS 100
+
+String eventos[MAX_EVENTOS];
+int indiceEvento = 0;
+
+int BottAUX =34 ;  // para encender rele 6 manuelamente desde panel fisico
+int BottBloqueo =35 ; // para deshabilitar los rele en automatico por alguna modificacion o reparacion 
+int Bottreset=25; //  pin entrada reset para red wifi
+int BottOFF=27;   // pin entrada boton para apagar todos los rele 
+#define LED_R 4  // pin salida LED rojo
+#define LED_G 2  // pin salida LED verde
+#define LED_B 5  // PIN salida LED azul 
+#define SENSOR_TANQUE 18  // pin entrada señal de sensor tanque
+#define DHTPIN 15         // entrada dato de sensor temp-hum
+int relePin[8]={13,23,14,22,26,21,33,32};   // salida de pines rele
+
 String ciudad = "Buenos Aires";
 float probabilidadLluvia = 0;
 unsigned long timerClima = 0;
-#include <HTTPClient.h>
-#include <ArduinoJson.h>
-
+bool bloqueoActivoGlobal = false;
+unsigned long bloqueoBombaManual = 0;
 String usuarios[MAX_USERS];
 int cantidadUsuarios = 0;
 float lat = -34.60;
 float lon = -58.38;
 String usuariosID[MAX_USERS];
 String usuariosNombre[MAX_USERS];
-
+unsigned long timerReporte = 0;
 DHT dht(DHTPIN, DHTTYPE);
 unsigned long bloqueoArranque=0;  
 WiFiManager wm;
@@ -35,12 +50,10 @@ Preferences prefs;
 WiFiClientSecure client;
 String BOTtoken;
 String CHAT_ID;
-void pantallaInicio(String texto);
+
 UniversalTelegramBot *bot;
-int relePin[8]={13,23,14,22,26,21,33,32};
+
 bool avisoHumedadEnviado=false;
-int Bottreset=25;
-int BottOFF=4;
 int segundosPrevios = -1;
 bool wifiEstadoAnterior=true;
 bool modoTanqueAutomatico = true;
@@ -77,7 +90,8 @@ const long gmtOffset_sec=-10800;
 String horaActual="";
 String ultimoEvento="Sistema iniciado";
 
-
+unsigned long timerBlink =0;
+bool estadoBlink = false ;
 unsigned long timerApagadoRele = 0;
 bool esperandoApagadoRele = false;
 int relePendienteApagado = -1;
@@ -90,43 +104,389 @@ unsigned long timerTelegram=0;
 unsigned long timerClock=0;
 unsigned long timerSensor=0;
 
+void apagarReleSeguro(int r){
 
-
-void consultarClima(){
-
-  if(WiFi.status() != WL_CONNECTED) return;
-
-  HTTPClient http;
-
-  String url = "http://api.openweathermap.org/data/2.5/forecast?q=" + ciudad + "&appid=TU_API_KEY&units=metric";
-
-  http.begin(url);
-  int httpCode = http.GET();
-
-  if(httpCode == 200){
-
-    String payload = http.getString();
-
-    DynamicJsonDocument doc(4096);
-    deserializeJson(doc, payload);
-    
-  if(doc["list"][0]["pop"].is<float>()){
-  probabilidadLluvia = doc["list"][0]["pop"].as<float>() * 100.0;
-}
+  // apago rele primero
+  if(reles[7].encendido){
+    digitalWrite(relePin[7], HIGH);
+    reles[7].encendido = false;
   }
 
-  http.end();
+  // prog.apagado valvula
+  esperandoApagadoRele = true;
+  timerApagadoRele = millis();
+  relePendienteApagado = r;
+}
+bool bloqueoFisicoActivo(){
+  return digitalRead(BottBloqueo) == LOW; // pulsado activado
+}
+void guardarEvento(String texto){
+
+  struct tm timeinfo;
+  String hora = "";
+
+  if(getLocalTime(&timeinfo)){
+    char buffer[10];
+    sprintf(buffer,"%02d:%02d:%02d",
+    timeinfo.tm_hour,
+    timeinfo.tm_min,
+    timeinfo.tm_sec);
+    hora = String(buffer);
+  }
+
+  String evento = "🕒 " + hora + " | " + texto;
+
+  eventos[indiceEvento] = evento;
+
+  prefs.begin("eventos", false);
+  prefs.putString(("e"+String(indiceEvento)).c_str(), evento);
+  prefs.putInt("indice", indiceEvento);
+  prefs.end();
+
+  indiceEvento++;
+
+  if(indiceEvento >= MAX_EVENTOS){
+    indiceEvento = 0; // 🔥 circular
+  }
+}
+void setColor(bool r, bool g, bool b){
+
+  digitalWrite(LED_R, r);
+  digitalWrite(LED_G, g);
+  digitalWrite(LED_B, b);
+
+}
+void actualizarLED(){
+
+  // 🔴 SIN WIFI
+  if(WiFi.status() != WL_CONNECTED){
+    setColor(1,0,0);
+    return;
+  }
+
+  // 🟣 LLUVIA O HUMEDAD ALTA
+  if(probabilidadLluvia > 60 || humedad > humedadLimite){
+    setColor(1,0,1);
+    return;
+  }
+
+  // 🟡 RELÉ ACTIVO → PARPADEO
+  bool hayReleActivo = false;
+
+  for(int i=0;i<7;i++){
+    if(reles[i].encendido){
+      hayReleActivo = true;
+      break;
+    }
+  }
+
+  if(hayReleActivo){
+
+    // parpadeo cada 1 segundo
+    if(millis() - timerBlink >= 500){
+      timerBlink = millis();
+      estadoBlink = !estadoBlink;
+    }
+
+    if(estadoBlink){
+      setColor(1,1,0); // amarillo ON
+    }else{
+      setColor(0,0,0); // apagado
+    }
+
+    return;
+  }
+
+  // 🟢 TODO OK
+  setColor(0,1,0);
+}
+void consultarClima(){
+
+  if(WiFi.status() != WL_CONNECTED){
+    Serial.println("❌ Sin WiFi");
+    return;
+  }
+
+  
+  client.setInsecure();
+
+  HTTPClient https;
+
+  String url = "https://api.open-meteo.com/v1/forecast?latitude=" 
+               + String(lat,6) + 
+               "&longitude=" + String(lon,6) + 
+               "&hourly=precipitation_probability&timezone=auto";
+
+  Serial.println("🌍 Consultando clima...");
+  Serial.println(url);
+
+  if(!https.begin(client, url)){
+    Serial.println("❌ begin() falló");
+    return;
+  }
+
+  int httpCode = https.GET();
+
+  Serial.println("HTTP CODE: " + String(httpCode));
+
+  if(httpCode > 0){
+
+    String payload = https.getString();
+    Serial.println("JSON recibido:");
+    Serial.println(payload);
+    DynamicJsonDocument doc(12288);
+
+    DeserializationError error = deserializeJson(doc, payload);
+
+    if(error){
+      Serial.print("❌ Error JSON: ");
+      Serial.println(error.c_str());
+      return;
+    }
+
+    struct tm timeinfo;
+    int horaActual = 0;
+
+    if(getLocalTime(&timeinfo)){
+      horaActual = timeinfo.tm_hour;
+    } else{
+      Serial.println("Hora no disponible");
+    horaActual = 0 ;
+  }
+
+    JsonArray lluvia = doc["hourly"]["precipitation_probability"];
+
+    if(!lluvia.isNull() && horaActual < lluvia.size()){
+      probabilidadLluvia = lluvia[horaActual];
+    }else{
+      Serial.println("⚠️ No se pudo leer lluvia");
+      probabilidadLluvia = 0;
+    }
+
+    Serial.println("🕒 Hora: " + String(horaActual));
+    Serial.println("🌧️ Prob lluvia: " + String(probabilidadLluvia));
+
+  }else{
+    Serial.println("❌ Error HTTP");
+  }
+  
+  
+  https.end();
+}
+bool obtenerCiudadPorCoordenadas(float lat, float lon){
+
+  client.setInsecure();
+  HTTPClient https;
+
+  String url = "https://nominatim.openstreetmap.org/reverse?lat=" 
+               + String(lat,6) + 
+               "&lon=" + String(lon,6) + 
+               "&format=json";
+
+  Serial.println("🌍 Reverse geocoding...");
+  Serial.println(url);
+
+  if(!https.begin(client, url)){
+    Serial.println("❌ begin() falló");
+    return false;
+  }
+
+  https.addHeader("User-Agent", "ESP32");
+
+  int httpCode = https.GET();
+
+  if(httpCode > 0){
+
+    String payload = https.getString();
+
+    DynamicJsonDocument doc(8192);
+    if(deserializeJson(doc, payload)){
+      Serial.println("❌ Error JSON");
+      https.end();
+      return false;
+    }
+
+    if(doc["display_name"]){
+
+      ciudad = doc["display_name"].as<String>();
+
+      prefs.begin("config", false);
+      prefs.putString("ciudad", ciudad);
+      prefs.end();
+
+      Serial.println("✅ Ciudad detectada:");
+      Serial.println(ciudad);
+
+      https.end();
+      return true;
+
+    }
+
+  }
+
+  https.end();
+  return false;
+}
+bool buscarCoordenadasOSM(String ciudadBusqueda){
+
+  client.setInsecure();
+  HTTPClient https;
+
+  ciudadBusqueda.trim();
+  ciudadBusqueda.replace(" ", "%20");
+
+  String url = "https://nominatim.openstreetmap.org/search?q=" 
+               + ciudadBusqueda + 
+               "&format=json&limit=1";
+
+  Serial.println("🌍 OSM fallback...");
+  Serial.println(url);
+
+  if(!https.begin(client, url)){
+    Serial.println("❌ begin() OSM falló");
+    return false;
+  }
+
+  https.addHeader("User-Agent", "ESP32");
+
+  int httpCode = https.GET();
+
+  if(httpCode > 0){
+
+    String payload = https.getString();
+
+    DynamicJsonDocument doc(8192);
+    DeserializationError error = deserializeJson(doc, payload);
+
+    if(error){
+      Serial.println("❌ JSON OSM error");
+      https.end();
+      return false;
+    }
+
+    if(doc.size() > 0){
+
+      lat = String((const char*)doc[0]["lat"]).toFloat();
+      lon = String((const char*)doc[0]["lon"]).toFloat();
+
+      ciudad = doc[0]["display_name"].as<String>();
+
+      prefs.begin("config", false);
+      prefs.putFloat("lat", lat);
+      prefs.putFloat("lon", lon);
+      prefs.putString("ciudad", ciudad);
+      prefs.end();
+
+      Serial.println("✅ OSM encontró:");
+      Serial.println(ciudad);
+
+      consultarClima();
+
+      https.end();
+      return true;   // ENCONTRÓ
+
+    }else{
+      Serial.println("❌ OSM no encontró nada");
+    }
+
+  }else{
+    Serial.println("❌ HTTP OSM error");
+  }
+
+  https.end();
+  return false;   // ❌ NO encontró
+}
+bool buscarCoordenadas(String ciudadBusqueda){
+
+  if(WiFi.status() != WL_CONNECTED){
+    Serial.println("❌ Sin WiFi");
+    return false;
+  }
+
+  client.setInsecure();
+  HTTPClient https;
+
+  ciudadBusqueda.trim();
+  ciudadBusqueda.replace(" ", "%20");
+
+  String url = "https://geocoding-api.open-meteo.com/v1/search?name=" 
+               + ciudadBusqueda + 
+               "&count=3&language=es&format=json";
+
+  Serial.println("🌍 Buscando ciudad...");
+  Serial.println(url);
+
+  if(!https.begin(client, url)){
+    Serial.println("❌ begin() falló");
+    return false;
+  }
+
+  int httpCode = https.GET();
+
+  if(httpCode > 0){
+
+    String payload = https.getString();
+
+    DynamicJsonDocument doc(4096);
+    DeserializationError error = deserializeJson(doc, payload);
+
+    if(error){
+      Serial.println("❌ Error JSON");
+      https.end();
+      return false;
+    }
+
+    if(doc["results"].size() > 0){
+
+      lat = doc["results"][0]["latitude"];
+      lon = doc["results"][0]["longitude"];
+
+      String nombre = doc["results"][0]["name"].as<String>();
+      String pais = doc["results"][0]["country"].as<String>();
+
+      ciudad = nombre + ", " + pais;
+
+      prefs.begin("config", false);
+      prefs.putFloat("lat", lat);
+      prefs.putFloat("lon", lon);
+      prefs.putString("ciudad", ciudad);
+      prefs.end();
+
+      Serial.println("✅ Ciudad encontrada:");
+      Serial.println(ciudad);
+
+      consultarClima();
+
+      https.end();
+      return true;   // ENCONTRÓ
+
+    }else{
+
+      Serial.println("⚠️ Open-Meteo falló → probando OSM");
+      https.end();
+
+      return buscarCoordenadasOSM(ciudadBusqueda);  // si falla
+    }
+
+  }else{
+    Serial.println("❌ HTTP error");
+  }
+
+  https.end();
+  return false;
+}
+bool esAdmin(String id){
+  return id == CHAT_ID;
 }
  void enviarATodos(String mensaje){
 
-  // 👑 admin primero
+  // admin primero
   bot->sendMessage(CHAT_ID, mensaje, "");
 
   for(int i=0;i<cantidadUsuarios;i++){
 
     bool repetido = false;
 
-    // 🔍 verificar duplicados
     for(int j=0;j<i;j++){
       if(usuariosID[i] == usuariosID[j]){
         repetido = true;
@@ -136,7 +496,7 @@ void consultarClima(){
 
     if(repetido) continue;
 
-    // 🚫 evitar enviar al admin duplicado
+    // evito enviar al admin mensaje duplicado
     if(usuariosID[i] == CHAT_ID) continue;
 
     bot->sendMessage(usuariosID[i], mensaje, "");
@@ -144,16 +504,19 @@ void consultarClima(){
  }
  void controlMultiplesHorarios(int hora,int minuto){
 
-  // 🔒 pequeño bloqueo después de manual
+  if(bloqueoFisicoActivo()){
+  return;
+}
+
+  // pequeño bloqueo después de manual
   if(millis() - bloqueoManualTiempo < 5000){
     return;
   }
 
   int limite = modoTanqueAutomatico ? 6 : 7;
 
-  // 🔴 =========================
-  // 🔴 CORTE EN TIEMPO REAL
-  // 🔴 =========================
+  //  CORTE EN TIEMPO REAL
+  
   for(int r=0;r<limite;r++){
 
     if(reles[r].encendido && reles[r].duracion > 0){
@@ -165,7 +528,7 @@ void consultarClima(){
 
         reles[r].ultimoMinuto = minuto;
 
-        // 🔍 verificar si queda algún rele activo
+        // verifica si queda algún rele activo
         bool quedaActivo = false;
 
         for(int i=0;i<6;i++){
@@ -175,13 +538,15 @@ void consultarClima(){
           }
         }
 
-        // 🚰 apagar bomba si no queda ninguno
+
+        // apagar bomba si no queda ninguno ACTIVO
+
         if(!quedaActivo){
           digitalWrite(relePin[7],HIGH);
           reles[7].encendido=false;
         }
 
-        enviarATodos("✅ "+reles[r].nombre+" finalizado");
+        enviarATodos("✅ "+reles[r].nombre+" finalizado con exito!!");
       }
     }
   }
@@ -192,13 +557,29 @@ if(minuto != ultimoMinutoGlobal){
 
   ultimoMinutoGlobal = minuto;
 
-  // 🟢 ACTIVACION AUTOMATICA SOLO UNA VEZ POR MINUTO
+  // ACTIVACION AUTOMATICA SOLO UNA VEZ POR MINUTO
  for(int r=0;r<limite;r++){
 
   if(!reles[r].habilitado) continue;
 
   for(int h=0;h<cantidadHorarios[r];h++){
 
+    
+  // BLOQUEO POR LLUVIA
+if(probabilidadLluvia > 60){
+
+  // 
+  static int ultimoAvisoLluvia = -1;
+
+  if(minuto != ultimoAvisoLluvia){
+    ultimoAvisoLluvia = minuto;
+
+    enviarATodos("🌧️ Riego cancelado por lluvia (" + String(probabilidadLluvia,1) + "%)");
+    guardarEvento("Riego cancelado por lluvia " + String(probabilidadLluvia) + "%");
+  }
+
+  continue;
+}
     if(!reles[r].encendido &&
        hora == horarios[r][h].hora &&
        minuto == horarios[r][h].minuto &&
@@ -208,6 +589,7 @@ if(minuto != ultimoMinutoGlobal){
 
         if(!avisoHumedadEnviado){
           enviarATodos("⚠️ Riego cancelado\nHumedad alta: "+String(humedad,1)+"%");
+          guardarEvento("Riego cancelado por humedad alta " + String(humedad) + "%");
           avisoHumedadEnviado=true;
         }
 
@@ -224,12 +606,13 @@ if(minuto != ultimoMinutoGlobal){
 
       reles[r].inicio=millis();
       reles[r].ultimoMinuto=minuto;  // 👈 CLAVE
-
+     
       enviarATodos("⚡ Activacion automatica: "+reles[r].nombre);
     }
   }
 }
 }
+
  }
 void guardarUsuarios(){
 
@@ -243,6 +626,51 @@ for(int i=0;i<cantidadUsuarios;i++){
 }
 
 prefs.end();
+}
+void ejecutarRele(int r, String origen, String usuario, String chat_id){
+
+  bloqueoManualTiempo = millis();
+
+  if(reles[r].encendido){
+
+  digitalWrite(relePin[r], HIGH);
+  reles[r].encendido = false;
+
+  // 👇 IMPORTANTE: si no queda ningún rele activo → apagar bomba
+  bool quedaActivo = false;
+
+  for(int i=0;i<6;i++){
+    if(reles[i].encendido){
+      quedaActivo = true;
+      break;
+    }
+  }
+
+  if(!quedaActivo){
+    digitalWrite(relePin[7], HIGH);
+    reles[7].encendido = false;
+  }
+
+  bot->sendMessage(chat_id,
+  "🔴 " + reles[r].nombre + " apagado desde " + origen + " ("+usuario+")",
+  "");
+}else{
+
+    digitalWrite(relePin[r],LOW);
+    reles[r].encendido = true;
+
+    
+    esperaBomba = true;
+    timerBomba = millis();
+
+    reles[r].duracion = 0;
+    reles[r].inicio = millis();
+
+    bot->sendMessage(chat_id,
+"🟢 " + reles[r].nombre + " encendido desde " + origen + " ("+usuario+")",
+"");
+
+  }
 }
 String sugerirComando(String txt){
 
@@ -262,6 +690,45 @@ String sugerirComando(String txt){
 
   return "";
 
+}
+void controlarBotonAUX(){
+
+  static bool estadoAnterior = HIGH;
+  static unsigned long tiempoPresionado = 0;
+  static bool esperando = false;
+
+  bool estadoActual = digitalRead(BottAUX);
+
+  
+  if(estadoActual == LOW && estadoAnterior == HIGH){
+    tiempoPresionado = millis();
+    esperando = true;
+  }
+
+  
+  if(esperando && (millis() - tiempoPresionado >= 500)){
+    esperando = false;
+
+    if(bloqueoFisicoActivo()){
+      enviarATodos("⛔ No se puede accionar - BLOQUEO ACTIVO");
+      estadoAnterior = estadoActual; 
+      return;
+    }
+
+    int r = 5;
+
+bool estadoAntes = reles[r].encendido;
+ejecutarRele(r, "botón físico", "LOCAL", CHAT_ID);
+String nombreRele = reles[r].nombre;
+
+if(estadoAntes){
+  guardarEvento(nombreRele + " apagado desde boton fisico");
+}else{
+  guardarEvento(nombreRele + " encendido desde boton fisico");
+}
+
+  estadoAnterior = estadoActual;
+  }
 }
 int obtenerCalidadWiFi()
 {
@@ -315,58 +782,64 @@ String obtenerNombreUsuario(String id){
   return "Desconocido";
 }
 void enviarMenuTelegram(String chat_id){
-  String menu="🌱 SISTEMA DE RIEGO AUTOMATICO\n";
-   menu+="SolucionesIOT 🌐";
-  menu+="━━━━━━━━━━━━━━━━━━\n\n";
 
-  menu+="📊 ESTADO \n";
-  
-  menu+="/menu      - Ver menu\n";
-  menu+="/menu_rapido - Accesos rápidos\n";
-  menu+="/estado    - Estado de sistema\n";
-  menu+="/horarios  - Ver automatizacion\n";
-  menu+="/sensores  - Temperatura-humedad-señal WiFi\n";
-  menu+="/todo_off - (Apagar todos los rele activos)\n";
-  menu+="/panel      - Ver panel de control reles\n"; 
-  menu+="/reiniciar - ReiniciaR sistema\n"; 
-  menu+="━━━━━━━━━━━━━━━━━━\n\n";
+String menu;
 
-  menu+="🗑 ADMIN NOMBRE - HORARIOS\n";
-  menu+="/borrar N I - (Borrar horario seleccionado)\n";
-  menu+="/borrarhorarios - (Borrar todos los horarios guardados)\n";
-  menu+="/borrarnombres- (Borrar todos los nombres de reles guardados)\n";
-  
-  menu+="━━━━━━━━━━━━━━━━━━\n\n";
+menu += "     🌱 *RIEGO AUTOMÁTICO INTELIGENTE*\n";
+menu += "                  🌐SolucionesIOT\n";
+menu += "       ━━━━━━━━━━━━━━━━━━\n\n";
 
-  menu+="🎛 CONTROL MANUAL (TOGGLE)\n";
-  menu+="Enviar el comando para cambiar estado\n\n";
-  for(int r=0;r<7;r++){
-  menu+="⚡ /rele"+String(r+1)+"- ";}
-  menu+="━━━━━━━━━━━━━━━━━━\n\n";
+menu += "      *SISTEMA*\n";
+menu += "📋  /menu\n";
+menu += "⚡  /menu_rapido\n";
+menu += "🔍  /historial\n";
+menu += "🔄  /reiniciar\n\n";
 
-  menu+="🔌 CONTROL GENERAL\n";
-  menu+="/nombrerele N NOMBRE \n"; 
-  menu+="(Cambiar nombre del rele)\n"; 
-  menu+="/habilitar N - (Habilitar rele)\n";
-  menu+="/deshabilitar N - (Deshabilitar rele)\n";
-  menu+="/habilitar_todos - Habilitar todos los rele\n";
-  menu+="/deshabilitar_todos - Deshabilitar todos los Rele\n";
-  menu+="/programar 1 21:30 60 \n";
-  menu+="Ej:(Programamos rele1, hora 21:30, 60 segundos corresponde a 1 minuto de trabajo)\n\n";
-  menu+="/tanque_si  - Activar modo tanque automatico\n";
-  menu+="/tanque_no  - Usar rele 7 como Normal\n";
-  menu+="/humedad N - (Cambiar limite humedad)\n";
-  menu+="⛔ Limite actual: ";
-  menu+=String(humedadLimite);
-  menu+=" %\n";
-  menu+="\n━━━━━━━━━━━━━━━━━━\n\n";
+menu += "      *ESTADO Y DATOS*\n";
+menu += "📊  /estado - Estado general\n";
+menu += "📡  /sensores - Temp / Humedad / WiFi\n";
+menu += "🌧  /clima - Probabilidad de lluvia\n";
+menu += "📅  /horarios - Ver riegos programados\n\n";
 
-  menu+="👥 ADMINISTRAR USUARIOS\n";
-  menu+="/autorizar ID Nombre - Agregar usuario\n";
-  menu+="/eliminar ID - Eliminar usuario\n";
-  menu+="/usuarios - Ver usuarios autorizados\n\n";
-  bot->sendMessage(chat_id,menu,"");
+menu += "      *UBICACIÓN*\n";
+menu += "🌍  /ciudad Nombre - Buscar ciudad\n";
+menu += "📍  /ubicacion latit-long - Manual\n\n";
 
+menu += "      *CONTROL MANUAL*\n";
+menu += "🎛  /panel - Panel con botones\n";
+menu += "⚡  /rele1 a /rele7 - Encender/Apagar\n";
+menu += "⛔  /todo_off - Apagar todo\n\n";
+
+menu += "      *PROGRAMACIÓN*\n";
+menu += "⏰  /programar N HH:MM SEG\n";
+menu += "🗑  /borrar N I - Borrar horario\n";
+menu += "🧹  /borrarhorarios - Borrar todo\n\n";
+
+menu += "      *HUMEDAD*\n";
+menu += "💧  /humedad N - Límite de humedad\n\n";
+
+menu += "      *TANQUE*\n";
+menu += "🚰  /tanque_si - Automático\n";
+menu += "🚫  /tanque_no - Manual\n\n";
+
+menu += "      *RELES*\n";
+menu += "✏️  /nombrerele N Nombre\n";
+menu += "✅  /habilitar N\n";
+menu += "⛔  /deshabilitar N\n";
+menu += "🟢  /habilitar_todos\n";
+menu += "🔴  /deshabilitar_todos\n";
+menu += "🧹  /borrarnombres\n\n";
+
+menu += "      *USUARIOS*\n";
+menu += "👥  /usuarios\n";
+menu += "➕  /autorizar ID Nombre\n";
+menu += "➖  /eliminar ID\n";
+menu += "❌ /borrarhistorial\n\n";
+
+menu += "    ✔️ *TIP*\n";
+menu += "➖El sistema bloquea riego si hay lluvia 🌧\n";
+menu += "➖Mira hasta 100 eventos almacenados en historial \n";
+bot->sendMessage(chat_id, menu, "");
 }
 void enviarMenuRapido(String chat_id){
 
@@ -449,8 +922,12 @@ wifiEstadoAnterior=estadoActual;
 
 }
 void controlarTanque(){
+if(bloqueoActivoGlobal){
+  return;
+}
+
 if(!modoTanqueAutomatico){
-  return; // 🔴 NO hace nada si está en modo manual
+  return; // NO hace nada si está en modo manual
 }
 
 
@@ -493,7 +970,7 @@ if(!reles[6].encendido){
 
 digitalWrite(relePin[6],LOW);
 reles[6].encendido=true;
-delay(500); // espera 0.5 segundos para asegurar apertura de válvula
+delay(1000); 
 }
 
 /* activar bomba */
@@ -511,7 +988,7 @@ if(reles[7].encendido){
 
 digitalWrite(relePin[7],HIGH);
 reles[7].encendido=false;
-delay(500); // espera 0.5 segundos para asegurar cierre de válvula
+delay(1000); 
 }
 
 /* luego tanque */
@@ -555,40 +1032,47 @@ prefs.end();
 
 }
 void controlarBomba(){
-static unsigned long bloqueoBomba = 0;
-
-if(millis()- bloqueoBomba<2000){
-  return;
-}
-
-bool algunReleActivo=false;
-
-/* 👉 si modo tanque manual → incluir rele 7 */
-int limite = modoTanqueAutomatico ? 6 : 7;
-
-for(int i=0;i<limite;i++){
-  if(reles[i].encendido){
-    algunReleActivo=true;
-    break;
+  
+  if(bloqueoActivoGlobal){
+    return;
   }
-}
 
-/* ENCENDER BOMBA */
-if(algunReleActivo && !reles[7].encendido && !esperandoApagadoRele){
+  if(millis() - bloqueoBombaManual < 3000){
+  return;
+  }
+ 
+  if(reles[6].encendido){
+    return;
+  }
 
-digitalWrite(relePin[7],LOW);
-reles[7].encendido=true;
+  static unsigned long bloqueoBomba = 0;
 
-}
+  if(millis() - bloqueoBomba < 2000){
+    return;
+  }
 
-/* APAGAR BOMBA */
-if(!algunReleActivo && reles[7].encendido){
+  bool algunReleActivo=false;
 
-digitalWrite(relePin[7],HIGH);
-reles[7].encendido=false;
+  int limite = modoTanqueAutomatico ? 6 : 7;
 
-}
+  for(int i=0;i<limite;i++){
+    if(reles[i].encendido){
+      algunReleActivo=true;
+      break;
+    }
+  }
 
+  // ENCENDER
+  if(algunReleActivo && !reles[7].encendido && !esperandoApagadoRele){
+    digitalWrite(relePin[7],LOW);
+    reles[7].encendido=true;
+  }
+
+  // APAGAR
+  if(!algunReleActivo && reles[7].encendido){
+    digitalWrite(relePin[7],HIGH);
+    reles[7].encendido=false;
+  }
 }
 void iniciarReles()
 {
@@ -660,6 +1144,19 @@ horarios[r][h].duracion=prefs.getInt(("d"+String(r)+String(h)).c_str(),10);
 prefs.end();
 
 }
+void borrarHistorial() {
+
+  prefs.begin("eventos", false); 
+  prefs.clear();
+  prefs.end();
+
+  // limpiar RAM también
+  for(int i=0;i<MAX_EVENTOS;i++){
+    eventos[i] = "";
+  }
+
+  indiceEvento = 0;
+}
 void leerSensor()
 {
 
@@ -699,6 +1196,7 @@ minutoPrevio = timeinfo.tm_min;
 void manejarTelegram(){
 client.setTimeout(1500);
 int numNewMessages = bot->getUpdates(bot->last_message_received + 1);
+
 while(numNewMessages){
 
 for(int i=0;i<numNewMessages;i++){
@@ -709,35 +1207,35 @@ text.trim();
 String chat_id = String(bot->messages[i].chat_id);
 bool comandoValido = false;
 
-/* 🔐 CONTROL DE ACCESO */
+static unsigned long ultimoAviso = 0;
+
+if(bloqueoFisicoActivo()){
+
+  if(millis() - ultimoAviso > 5000){
+    
+    bot->sendMessage(chat_id,
+    "⛔ Sistema bloqueado por seguridad física",
+    "");
+    ultimoAviso = millis();
+  }
+
+  continue;
+}
 
 if(millis() - bloqueoArranque < 8000){
 continue;
 }
 if(!usuarioAutorizado(chat_id)){
 
-  // 👉 si NO hay usuarios cargados
-  if(cantidadUsuarios == 0){
+  bot->sendMessage(chat_id,
+  "⛔ Usuario no autorizado\n\n"
+  "🆔 ID: " + chat_id + "\n"
+  "👉 Solicita acceso al administrador",
+  "");
 
-    bot->sendMessage(chat_id,
-    "⚠️ Sistema sin usuarios registrados\n\n"
-    "👉 Solo el ADMIN puede usarlo\n"
-    "👉 Para agregar usuarios:\n"
-    "/autorizar ID Nombre\n\n"
-    "📌 Ejemplo:\n"
-    "/autorizar 123456789 Juan",
-    "");
-
-  }else{
-
-    bot->sendMessage(chat_id,
-    "⛔ Usuario no autorizado!!\n\n"
-    "👉 Pedir acceso al administrador!!",
-    "");
-    bot->sendMessage(CHAT_ID,
-    "🚫 Intento de acceso\nID: " + chat_id,
-    "");
-  }
+  bot->sendMessage(CHAT_ID,
+  "🚫 Intento de acceso\nID: " + chat_id,
+  "");
 
   continue;
 }
@@ -753,47 +1251,70 @@ for(int r=0;r<7;r++){
 
 if(text.startsWith("/ciudad")){
 
+  comandoValido = true;
+
+  char nueva[60];
+
+  int resultado = sscanf(text.c_str(), "/ciudad %[^\n]", nueva);
+
+  if(resultado == 1){
+
+    String ciudadIngresada = String(nueva);
+
+    bot->sendMessage(chat_id,
+    "🌍 Buscando ciudad...\n" + ciudadIngresada,
+    "");
+
+    bool ok = buscarCoordenadas(ciudadIngresada);
+
+    if(ok){
+       String nombre = obtenerNombreUsuario(chat_id);
+       guardarEvento(nombre + "actualizo UBICACION. ");  // almaceno accion y nombre en histrial 
+      bot->sendMessage(chat_id,
+      "✅ Ciudad encontrada:\n📍 " + ciudad,
+      "");
+
+    }else{
+
+      bot->sendMessage(chat_id,
+      "❌ No se encontró la ciudad:\n" + ciudadIngresada,
+      "");
+
+    }
+
+  }else{
+
+    bot->sendMessage(chat_id,
+    "⚠️ Uso: /ciudad (ciudad ubicacion)",
+    "");
+
+  }
+}
+
+if(text == "/clima"){
+
 comandoValido = true;
 
-char nueva[40];
-
-int ok = sscanf(text.c_str(), "/ciudad %[^\n]", nueva);
-
-if(ok == 1){
-
-ciudad = String(nueva);
-
-prefs.begin("config", false);
-prefs.putString("ciudad", ciudad);
-prefs.end();
-
-bot->sendMessage(chat_id,
-"📍 Ubicación actualizada:\n" + ciudad,
-"");
-
-}else{
-
-bot->sendMessage(chat_id,
-"⚠️ Uso: /ciudad Buenos Aires",
-"");
-
-}
-}
-
-if(text == "/lluvia"){
-
-comandoValido = true;
+consultarClima();  // SEGUNDA ACTUALIZACON
 
 String msg;
 
-msg += "🌧️ Pronóstico de lluvia\n";
-msg += "📍 " + ciudad + "\n\n";
-msg += "Probabilidad: " + String(probabilidadLluvia,1) + " %";
+msg += "🌧️ *CLIMA*\n";
+msg += "━━━━━━━━━━━━━━━━━━\n\n";
+msg += "📍 " + ciudad + "\n";
+msg += "🌧️ Probabilidad: " + String(probabilidadLluvia,1) + " %\n\n";
 
-bot->sendMessage(chat_id, msg, "");
+Serial.println("CLIMA ACTUAL:");
+Serial.println(probabilidadLluvia);
+
+if(probabilidadLluvia > 60){
+  msg += "⛔ Riego BLOQUEADO por lluvia";
+}else{
+  msg += "✅ Riego permitido";
 }
 
-
+bot->sendMessage(chat_id, msg, "Markdown");
+}
 
 if(text.startsWith("/ubicacion")){
 
@@ -812,7 +1333,8 @@ prefs.begin("config", false);
 prefs.putFloat("lat", lat);
 prefs.putFloat("lon", lon);
 prefs.end();
-
+ String nombre = obtenerNombreUsuario(chat_id);
+ guardarEvento(nombre + "actualizo UBICACION. ");  // almaceno accion y nombre en histrial 
 bot->sendMessage(chat_id,
 "📍 Ubicación guardada\nLat: " + String(lat,6) +
 "\nLon: " + String(lon,6),
@@ -826,8 +1348,41 @@ bot->sendMessage(chat_id,
 
 }
 }
+// ===== BORRAR HISTORIAL =====
 
+if (text == "/borrarhistorial") {
 
+  comandoValido = true;
+
+  if (!esAdmin(chat_id)) {
+    bot->sendMessage(chat_id, "⛔ Solo el admin puede borrar el historial", "");
+    return;
+  }
+
+  bot->sendMessage(chat_id,
+  "⚠️ Confirmar borrado\nEscribí: /confirmarborrado",
+  "");
+
+  return;
+}
+
+if (text == "/confirmarborrado") {
+
+  comandoValido = true;
+
+  if (!esAdmin(chat_id)) {
+    bot->sendMessage(chat_id, "⛔ No autorizado", "");
+    return;
+  }
+
+  borrarHistorial();
+
+  bot->sendMessage(chat_id,
+  "🗑️ Historial borrado correctamente",
+  "");
+
+  return;
+}
 
 if(text=="/menu"){
 enviarMenuTelegram(chat_id);
@@ -848,47 +1403,94 @@ comandoValido = true;
 // ---- MODO TANQUE ----
 
 if(text == "/tanque_si"){
-comandoValido = true;
-modoTanqueAutomatico = true;
+  comandoValido = true;
 
-/* nombre automatico */
-reles[6].nombre = "TANQUE";
+  modoTanqueAutomatico = true;
 
-/* guardar nombre */
-prefs.begin("reles", false);
-prefs.putString("nombre6", "TANQUE");
-prefs.end();
+  // nombre automático
+  reles[6].nombre = "TANQUE";
 
-/* guardar modo */
-prefs.begin("config", false);
-prefs.putBool("modoTanque", modoTanqueAutomatico);
-prefs.end();
+  // guardar nombre
+  prefs.begin("reles", false);
+  prefs.putString("nombre6", "TANQUE");
+  prefs.end();
 
-bot->sendMessage(chat_id,"⚠️ ATENCION! Tanque AUTOMATICO activado","");
+  // guardar modo
+  prefs.begin("config", false);
+  prefs.putBool("modoTanque", modoTanqueAutomatico);
+  prefs.end();
 
+  //  RESET TOTAL DEL TANQUE
+  digitalWrite(relePin[6], HIGH);
+  reles[6].encendido = false;
+
+  //  APAGAR BOMBA (se re-evaluará sola)
+  digitalWrite(relePin[7], HIGH);
+  reles[7].encendido = false;
+
+  //  pequeño bloqueo para evitar rebotes automáticos
+  bloqueoBombaManual = millis();
+   String nombre = obtenerNombreUsuario(chat_id);
+  guardarEvento(nombre + " habilita Modo tanque AUTOMATICO.");  // almaceno accion y nombre en histrial 
+  bot->sendMessage(chat_id,
+  "⚠️ Tanque AUTOMATICO ACTIVADO\nControl por flotante habilitado",
+  "");
 }
 
 if(text == "/tanque_no"){
-comandoValido = true;
-modoTanqueAutomatico = false;
+  comandoValido = true;
 
-/* volver a nombre normal */
-String nombreDefault = "Rele 7";
-reles[6].nombre = nombreDefault;
+  modoTanqueAutomatico = false;
 
-/* guardar nombre */
-prefs.begin("reles", false);
-prefs.putString("nombre6", nombreDefault);
-prefs.end();
+  // nombre normal
+  String nombreDefault = "Rele 7";
+  reles[6].nombre = nombreDefault;
 
-/* guardar modo */
-prefs.begin("config", false);
-prefs.putBool("modoTanque", modoTanqueAutomatico);
-prefs.end();
+  // guardar config
+  prefs.begin("reles", false);
+  prefs.putString("nombre6", nombreDefault);
+  prefs.end();
 
-bot->sendMessage(chat_id,"⚠️ ATENCION! Tanque AUTOMATICO DESHABILITADO, Rele 7 habilitado NORMAL","");
+  prefs.begin("config", false);
+  prefs.putBool("modoTanque", modoTanqueAutomatico);
+  prefs.end();
 
+  //  APAGAR TANQUE SI ESTABA ACTIVO
+  if(reles[6].encendido){
+    digitalWrite(relePin[6], HIGH);
+    reles[6].encendido = false;
+  }
+
+  // APAGAR BOMBA SI ESTABA POR TANQUE
+  if(reles[7].encendido){
+
+    bool hayRiego = false;
+
+    for(int i=0;i<6;i++){
+      if(reles[i].encendido){
+        hayRiego = true;
+        break;
+      }
+    }
+
+    // solo apagar si NO hay riego activo
+    if(!hayRiego){
+      digitalWrite(relePin[7], HIGH);
+      reles[7].encendido = false;
+    }
+  }
+
+  //  BLOQUEO CORTO PARA EVITAR REENCENDIDO AUTOMATICO
+  bloqueoBombaManual = millis();
+
+  String nombre = obtenerNombreUsuario(chat_id);
+  guardarEvento(nombre + " deshabilita Modo tanque AUTOMATICO.");  // almaceno accion y nombre en histrial 
+  
+  bot->sendMessage(chat_id,
+  "⚠️ Tanque AUTOMATICO DESACTIVADO\n",
+  "");
 }
+
 
 if(text=="/borrarnombres"){
 comandoValido = true;
@@ -912,7 +1514,8 @@ prefs.putString(("nombre"+String(i)).c_str(), nombreDefault);
 }
 
 prefs.end();
-
+ String nombre = obtenerNombreUsuario(chat_id);
+guardarEvento(nombre + " realizo borrado de nombres almacenados.");  // almaceno accion y nombre en histrial 
 bot->sendMessage(chat_id,"🗑 Nombres de todos los Rele reiniciados correctamente","");
 
 
@@ -929,12 +1532,10 @@ for(int i=0;i<8;i++){
 }
 
 prefs.end();
-
+ String nombre = obtenerNombreUsuario(chat_id);
+ guardarEvento(nombre + " habilito todos los Rele ");  // almaceno accion y nombre en histrial 
 bot->sendMessage(chat_id,"✅ Todos los Rele habilitados","");
 }
-
-
-
 
 
 if(text=="/deshabilitar_todos"){
@@ -943,25 +1544,27 @@ prefs.begin("reles",false);
 
 for(int i=0;i<8;i++){
 
-  if(i==7) continue;
+  if(i==7) continue; // bomba protegida
+
+  //  NO toca tanque si está en automático
+  if(i==6 && modoTanqueAutomatico) continue;
 
   reles[i].habilitado=false;
   prefs.putBool(("hab"+String(i)).c_str(),false);
 }
 
 prefs.end();
-
+  String nombre = obtenerNombreUsuario(chat_id);
+  guardarEvento(nombre + " deshabilito todos los Rele. ");  // almaceno accion y nombre en histrial
 bot->sendMessage(chat_id,"⛔ Todos los Rele deshabilitados","");
 }
-
-
-
 
 /////// reiniciar sistema -///////
 if(text=="/reiniciar"){
 comandoValido = true;
 bot->sendMessage(chat_id,"🔄 Reiniciando sistema...","");
-
+ String nombre = obtenerNombreUsuario(chat_id);
+  guardarEvento(nombre + " reinicia el sistema. ");  // almaceno accion y nombre en histrial 
 reinicioPendiente = true;
 timerReinicio = millis();
 
@@ -969,7 +1572,6 @@ timerReinicio = millis();
 bot->last_message_received = bot->messages[i].update_id;
 
 }
-
 
 /* ===== BORRAR TODOS LOS HORARIOS ===== */
 
@@ -991,7 +1593,8 @@ horarios[r][h].duracion=0;
 
 /* guardar cambios en memoria */
 guardarHorarios();
-
+ String nombre = obtenerNombreUsuario(chat_id);
+ guardarEvento(nombre + " borra todos los horarios almacenados. ");  // almaceno accion y nombre en histrial 
 bot->sendMessage(chat_id,"🗑  Todos los horarios fueron borrados. Sistema reiniciado de programacion.","");
 
 }
@@ -1021,52 +1624,74 @@ mensaje+="\n━━━━━━━━━━━━━━━━━━\n\n";
 
 mensaje+="🔌 *RELES*\n\n";
 
-
 for(int r=0;r<8;r++){
 
-/* 🚰 RELE 8 = BOMBA */
-if(r==7){
+  //  RELE 8 = BOMBA
+  if(r==7){
 
-mensaje+="🚰 BOMBA\n";
+    mensaje+="🚰 BOMBA\n";
 
-mensaje+="Estado: ";
+    mensaje+="Estado: ";
+    if(reles[7].encendido)
+      mensaje+="🟢 ON\n";
+    else
+      mensaje+="⚪ OFF\n";
 
-if(reles[7].encendido)
-mensaje+="🟢 ON\n";
-else
-mensaje+="⚪ OFF\n";
+    mensaje+="Modo: ⚙️ AUTOMATICO (Por valvulas activas)\n\n";
 
-mensaje+="Modo: ⚙️ AUTOMATICO (Por valvulas activas)\n\n";
+    continue;
+  }
 
-continue;
-}
+  // RELE 7 = TANQUE
+  if(r==6){
 
-/* resto de reles normales */
-mensaje+="💧 "+reles[r].nombre+"\n";
+    mensaje+="💧 "+reles[r].nombre+"\n";
 
-mensaje+="Estado: ";
+    mensaje+="Estado: ";
+    if(reles[r].encendido)
+      mensaje+="🟢 ON\n";
+    else
+      mensaje+="⚪ OFF\n";
 
-if(reles[r].encendido)
-mensaje+="🟢 ON\n";
-else
-mensaje+="⚪ OFF\n";
+    mensaje+="Control: ";
 
-mensaje+="Control: ";
+    if(modoTanqueAutomatico){
+      // SIEMPRE HABILITADO EN AUTOMATICO
+      mensaje+="🟢 AUTOMATICO (Flotante)\n";
+    }else{
+      //  comportamiento normal
+      if(reles[r].habilitado)
+        mensaje+="🟢 HABILITADO\n";
+      else
+        mensaje+="🔴 DESHABILITADO\n";
+    }
 
-if(reles[r].habilitado)
-mensaje+="🟢 HABILITADO\n";
-else
-mensaje+="🔴 DESHABILITADO\n";
+    mensaje+="\n";
+    continue;
+  }
 
-mensaje+="\n";
+  // RELES NORMALES
+  mensaje+="💧 "+reles[r].nombre+"\n";
 
+  mensaje+="Estado: ";
+  if(reles[r].encendido)
+    mensaje+="🟢 ON\n";
+  else
+    mensaje+="⚪ OFF\n";
+
+  mensaje+="Control: ";
+  if(reles[r].habilitado)
+    mensaje+="🟢 HABILITADO\n";
+  else
+    mensaje+="🔴 DESHABILITADO\n";
+
+  mensaje+="\n";
 }
 
 bot->sendMessage(chat_id,mensaje,"Markdown");
 
 
 }
-
 
 
 if(text.startsWith("/autorizar")){
@@ -1102,6 +1727,9 @@ usuariosNombre[cantidadUsuarios] = nuevoNombre;
 cantidadUsuarios++;
 
 guardarUsuarios();
+
+ String nombre = obtenerNombreUsuario(chat_id);
+  guardarEvento( nombre + " autorizo usuario " + nuevoNombre + " (" + nuevoID + ")");  // almaceno accion y nombre en histrial 
 
 bot->sendMessage(chat_id,
 "✅ Usuario autorizado\n👤 "+nuevoNombre+"\n🆔 "+nuevoID,
@@ -1139,8 +1767,11 @@ for(int i=0;i<cantidadUsuarios;i++){
 
 bot->sendMessage(chat_id, lista, "");
 }
+
+
 if(text.startsWith("/eliminar")){
 comandoValido = true;
+
 if(chat_id != CHAT_ID){
   bot->sendMessage(chat_id,"⛔ Solo admin","");
   return;
@@ -1152,10 +1783,13 @@ int ok = sscanf(text.c_str(), "/eliminar %s", id);
 if(ok == 1){
 
 String eliminarID = String(id);
+String nombreAdmin = obtenerNombreUsuario(chat_id);
 
 for(int i=0;i<cantidadUsuarios;i++){
 
 if(usuariosID[i] == eliminarID){
+
+String nombreEliminado = usuariosNombre[i];  // guardo nombre antes
 
 for(int j=i;j<cantidadUsuarios-1;j++){
 usuariosID[j] = usuariosID[j+1];
@@ -1167,6 +1801,9 @@ cantidadUsuarios--;
 guardarUsuarios();
 
 bot->sendMessage(chat_id,"🗑 Usuario eliminado","");
+
+guardarEvento( nombreAdmin + " elimino a " + nombreEliminado);  // almaceno accion y nombre en histrial
+
 return;
 }
 
@@ -1175,6 +1812,7 @@ return;
 bot->sendMessage(chat_id,"⚠️ Usuario no encontrado","");
 }
 }
+
 
 /* ===== NUEVO COMANDO /HORARIOS ===== */
 if(text=="/horarios"){
@@ -1186,7 +1824,7 @@ mensaje+="━━━━━━━━━━━━━━━━━━\n\n";
 
 for(int r=0;r<8;r++){
 
-/* 👉 RELE 8 = BOMBA */
+/* RELE 8 = BOMBA */
 if(r==7){
 
 mensaje+="🚰 *BOMBA*\n";
@@ -1196,20 +1834,20 @@ mensaje+="   Depende de valvulas activas.\n\n";
 continue;
 }
 
-/* 👉 RELE 7 = TANQUE */
+/* RELE 7 = TANQUE */
 if(r==6){
 
 mensaje+="💧 *"+reles[r].nombre+"*\n";
 if(modoTanqueAutomatico){
 
-mensaje+="   ⚙️ Flotante automatico activado\n\n";
-
+mensaje+="   ⚙️ Flotante automatico activado\n";
+mensaje+="---------------------------------------\n";
 }else{
 
 if(cantidadHorarios[r]==0){
 
-mensaje+="   🚫 Sin horarios\n\n";
-
+mensaje+="   🚫 Sin horarios\n";
+mensaje+="--------------------------------------\n";
 
 }else{
 
@@ -1229,7 +1867,7 @@ mensaje+="  //  ⏱ ";
 mensaje+=String(horarios[r][h].duracion);
 mensaje+=" seg\n";
 }
-mensaje+="-------------------------------\n";
+mensaje+="--------------------------------------\n";
 }
 
 }
@@ -1237,12 +1875,14 @@ mensaje+="-------------------------------\n";
 continue;
 }
 
-/* 👉 RELES 1–6 (TODO IGUAL QUE ANTES) */
+/* RELES 1–6 (TODO IGUAL QUE ANTES) */
+
 mensaje+="💧 *"+reles[r].nombre+"*\n";
 
 if(cantidadHorarios[r]==0){
 
-mensaje+="   🚫 Sin horarios\n\n";
+mensaje+="   🚫 Sin horarios\n";
+mensaje+="--------------------------------------\n";
 continue;
 
 }
@@ -1264,7 +1904,7 @@ mensaje+=String(horarios[r][h].duracion);
 mensaje+=" seg\n";
 
 }
-mensaje+="-------------------------------\n";
+mensaje+="--------------------------------------\n";
 
 }
 
@@ -1273,32 +1913,7 @@ mensaje+="━━━━━━━━━━━━━━━━━━";
 bot->sendMessage(chat_id,mensaje,"Markdown");
 
 }
-/* ===== COMANDO HUMEDAD ===== */
 
-if(text.startsWith("/humedad")){
-
-int valor;
-int ok = sscanf(text.c_str(), "/humedad %d",&valor);
-
-if(ok == 1 && valor>0 && valor<=100){
-
-comandoValido = true;
-
-humedadLimite = valor;
-
-prefs.begin("config",false);
-prefs.putFloat("humedadLimite",humedadLimite);
-prefs.end();
-
-bot->sendMessage(chat_id,"⛔ Nuevo limite humedad: "+String(valor)+"%","");
-
-}else{
-
-bot->sendMessage(chat_id,"⚠️ Uso correcto: /humedad 1 a 100","");
-
-}
-
-}
 
 /* ===== COMANDO HUMEDAD ===== */
 
@@ -1311,11 +1926,17 @@ if(ok == 1 && valor>0 && valor<=100){
 
 comandoValido = true;
 
+float anterior = humedadLimite;
+
 humedadLimite = valor;
 
 prefs.begin("config",false);
 prefs.putFloat("humedadLimite",humedadLimite);
 prefs.end();
+
+String nombre = obtenerNombreUsuario(chat_id);
+guardarEvento(
+  nombre + " cambio humedad de " + String(anterior) + "% a " + String(valor) + "%");
 
 bot->sendMessage(chat_id,"⛔ Nuevo limite humedad: "+String(valor)+"%","");
 
@@ -1326,6 +1947,34 @@ bot->sendMessage(chat_id,"⚠️ Uso correcto: /humedad 1 a 100","");
 }
 
 }
+
+if(text=="/historial"){
+comandoValido = true;
+
+String msg = "📜 *ULTIMOS HISTORIAL DE EVENTOS*\n";
+msg += "━━━━━━━━━━━━━━━━━━\n\n";
+
+int contador = 0;
+
+// mostrar desde el más nuevo hacia atrás
+for(int i=0;i<MAX_EVENTOS;i++){
+
+  int idx = (indiceEvento - 1 - i + MAX_EVENTOS) % MAX_EVENTOS;
+
+  if(eventos[idx] != ""){
+    msg += eventos[idx] + "\n";
+    contador++;
+  }
+}
+
+if(contador == 0){
+  msg += "⚠️ Sin eventos registrados";
+}
+
+bot->sendMessage(chat_id, msg, "Markdown");
+}
+
+
 /* ===== CAMBIAR NOMBRE RELE ===== */
 
 if(text.startsWith("/nombrerele")){
@@ -1354,7 +2003,8 @@ reles[numero].nombre = String(nombre);
 prefs.begin("reles",false);
 prefs.putString(("nombre"+String(numero)).c_str(),reles[numero].nombre);
 prefs.end();
-
+ String nombre = obtenerNombreUsuario(chat_id);   /// creamos variable, almacenamos con el nombre obtenernombreusuario lo que llega por chatid
+ guardarEvento(nombre + " cambio nombre de Rele " + String(numero+1) + " a " + reles[numero].nombre);  // almaceno accion y nombre en histrial 
 bot->sendMessage(
 chat_id,
 "✅ Nombre actualizado: Rele "+String(numero+1)+" → "+reles[numero].nombre,
@@ -1389,65 +2039,16 @@ bot->sendMessage(chat_id,msg,"Markdown");
 
 }
 // -------- CONTROL MANUAL TOGGLE --------
-
 for(int r=0;r<7;r++){
 
-String cmd="/rele"+String(r+1);
+  String cmd="/rele"+String(r+1);
 
-if(text==cmd){
-comandoValido = true;
-bloqueoManualTiempo = millis();
+  if(text==cmd){
+    comandoValido = true;
 
-static unsigned long bloqueoBomba = 0;
-bloqueoBomba = millis();
-
-if(reles[r].encendido){
-
-  // 🔴 APAGAR INMEDIATO
-  digitalWrite(relePin[r], HIGH);
-  reles[r].encendido = false;
-
-  // 🔍 verificar si hay otro rele activo
-  bool hayOtroActivo = false;
-
-  int limite = modoTanqueAutomatico ? 6 : 7;
-
-  for(int i=0;i<limite;i++){
-    if(i != r && reles[i].encendido){
-      hayOtroActivo = true;
-      break;
-    }
+    String nombre = obtenerNombreUsuario(chat_id);
+    ejecutarRele(r, "Telegram", nombre,chat_id);
   }
-
-  // 👉 apagar bomba solo si no queda ninguno
-  if(!hayOtroActivo){
-    digitalWrite(relePin[7],HIGH);
-    reles[7].encendido=false;
-  }
-
-  String nombre = obtenerNombreUsuario(chat_id);
-  enviarATodos("✅ "+reles[r].nombre+" - Apagado manual por: "+nombre);
-}
-else{
-
-digitalWrite(relePin[r],LOW);
-reles[r].encendido=true;
-
-// ⏱ esperar antes de prender bomba
-esperaBomba = true;
-timerBomba = millis();
-
-/* modo manual permanente */
-reles[r].duracion=0;
-reles[r].inicio=millis();
-
-String nombre = obtenerNombreUsuario(chat_id);
-enviarATodos("⚡ "+reles[r].nombre+"- Encendido manual por: "+nombre);
-
-}
-
-}
-
 }
 
 // -------- HABILITAR --------
@@ -1459,7 +2060,7 @@ int ok = sscanf(text.c_str(), "/habilitar %d",&numero);
 
 if(ok == 1 && numero>=1 && numero<=8){
 
-comandoValido = true;   // 👈 ACA (NO antes)
+comandoValido = true;  
 
 numero--;
 
@@ -1468,6 +2069,9 @@ reles[numero].habilitado=true;
 prefs.begin("reles",false);
 prefs.putBool(("hab"+String(numero)).c_str(),true);
 prefs.end();
+
+String nombre = obtenerNombreUsuario(chat_id);   /// creamos variable, almacenamos con el nombre obtenernombreusuario lo que llega por chatid
+guardarEvento(nombre + " habilita Rele" + String(numero+1));   /// almacenamos la info en el historial
 
 bot->sendMessage(chat_id,"✅ Rele "+String(numero+1)+" habilitado","");
 
@@ -1488,7 +2092,7 @@ int ok = sscanf(text.c_str(), "/deshabilitar %d",&numero);
 
 if(ok == 1 && numero>=1 && numero<=8){
 
-comandoValido = true;   // 👈 ACA (NO antes)
+comandoValido = true;  
 
 
 numero--;
@@ -1505,6 +2109,8 @@ prefs.putBool(("hab"+String(numero)).c_str(),false);
 prefs.end();
 
 bot->sendMessage(chat_id,"⛔ Rele "+String(numero+1)+" deshabilitado","");
+String nombre = obtenerNombreUsuario(chat_id);   /// creamos variable, almacenamos con el nombre obtenernombreusuario lo que llega por chatid
+guardarEvento(nombre + " deshabilita Rele" + String(numero+1));   /// almacenamos la info en el historial
 
 }else{
 
@@ -1526,6 +2132,8 @@ for(int r=0;r<8;r++){
 digitalWrite(relePin[r],HIGH);
 reles[r].encendido=false;}
 delay((500));
+String nombre = obtenerNombreUsuario(chat_id);   /// creamos variable, almacenamos con el nombre obtenernombreusuario lo que llega por chatid
+guardarEvento(nombre + " apago todos los Rele ");   /// almacenamos la info en el historial
 bot->sendMessage(chat_id,"⛔ Todos los reles apagados manualmente","");
 bot->last_message_received = bot->messages[i].update_id;
 }
@@ -1547,7 +2155,7 @@ numero--;
 if(numero == 6 && modoTanqueAutomatico){
 
   bot->sendMessage(chat_id,
-  "⛔ No se puede programar el rele 7 en modo tanque automatico",
+  "⛔ No se puede programar Rele 7 en modo tanque automatico",
   "");
 
   return;
@@ -1566,6 +2174,12 @@ cantidadHorarios[numero]++;
 
 guardarHorarios();
 
+String nombre = obtenerNombreUsuario(chat_id);   /// creamos variable, almacenamos con el nombre obtenernombreusuario lo que llega por chatid
+guardarEvento(
+  nombre + " programo" " (" + reles[numero].nombre + ")" +         ///////////almacenamos datos para el historial
+  " a las " + String(hora) + ":" + (minuto<10?"0":"") + String(minuto) +
+  " por " + String(duracion) + " seg"
+);
 bot->sendMessage(chat_id,"✅ Horario agregado correctamente","");
 
 }else{
@@ -1591,17 +2205,47 @@ indice--;
 
 if(rele>=0 && rele<7 && indice<cantidadHorarios[rele]){
 
+  
+int h = horarios[rele][indice].hora;
+int m = horarios[rele][indice].minuto;
+int d = horarios[rele][indice].duracion;
+
+
 for(int i=indice;i<cantidadHorarios[rele]-1;i++){
 
 horarios[rele][i]=horarios[rele][i+1];
 
 }
-
 cantidadHorarios[rele]--;
 
 guardarHorarios();
 
-bot->sendMessage(chat_id,"🗑  Horario borrado","");
+String nombre = obtenerNombreUsuario(chat_id);
+
+guardarEvento(nombre + " borro horario de " " (" + reles[rele].nombre + ")" +
+  " a las " + String(h) + ":" + (m<10?"0":"") + String(m) +
+  " por " + String(d) + " seg");
+
+String msg;
+
+msg += "🗑 *HORARIO BORRADO*\n";
+msg += "━━━━━━━━━━━━━━━━━━\n\n";
+
+msg += "💧 " + reles[rele].nombre + "\n";
+
+msg += "⏰ ";
+if(h < 10) msg += "0";
+msg += String(h);
+msg += ":";
+
+if(m < 10) msg += "0";
+msg += String(m);
+
+msg += "\n";
+
+msg += "⏱ " + String(d) + " seg\n";
+
+bot->sendMessage(chat_id, msg, "Markdown");
 
 }
 
@@ -1633,8 +2277,9 @@ numNewMessages = bot->getUpdates(bot->last_message_received + 1);
 }
 void setup()
 {
-Serial.begin(115200);
-
+Serial.begin(9600);
+Serial.println("TEST SERIAL");
+setColor(0,0,0);
 prefs.begin("config", true);
 lat = prefs.getFloat("lat", -34.60);
 lon = prefs.getFloat("lon", -58.38);
@@ -1651,10 +2296,24 @@ for(int i=0;i<cantidadUsuarios;i++){
 
 prefs.end();
 
-
+pinMode(BottBloqueo,INPUT);
+pinMode(LED_R, OUTPUT);
+pinMode(LED_G, OUTPUT);
+pinMode(LED_B, OUTPUT);
+pinMode(BottAUX,INPUT);
 pinMode(Bottreset,INPUT_PULLUP);
 pinMode(BottOFF,INPUT_PULLUP);
 pinMode(SENSOR_TANQUE,INPUT_PULLUP);
+
+prefs.begin("eventos", true);
+
+indiceEvento = prefs.getInt("indice", 0);
+
+for(int i=0;i<MAX_EVENTOS;i++){
+  eventos[i] = prefs.getString(("e"+String(i)).c_str(), "");
+}
+
+prefs.end();
 
 /* SENSOR */
 dht.begin();
@@ -1698,99 +2357,181 @@ intentos++;
 /* CARGAR DATOS */
 cargarHorarios();
 leerSensor();
+consultarClima();
 
 bloqueoArranque = millis();
 
 enviarATodos("✅ Sistema iniciado correctamente");
+  actualizarLED();
+
 
 }
 void loop()
 {
 
-unsigned long now = millis();
+  unsigned long now = millis();
 
-unsigned long timerReporte = 0;
+  // BLOQUEO FISICO
+  static bool bloqueoAnterior = false;
+  bool bloqueoActual = bloqueoFisicoActivo();
 
-if(millis() - timerReporte > 8000000){ // 
-  enviarATodos("📡 Sistema OK\nTemp: "+String(temperatura));
-  timerReporte = millis();
-}
+  if(bloqueoActual != bloqueoAnterior){
 
-if(esperaBomba && millis() - timerBomba >= 100){ 
+    if(bloqueoActual){
 
-  digitalWrite(relePin[7],LOW);
-  reles[7].encendido=true;
+      bloqueoActivoGlobal = true;
 
-  esperaBomba = false;
-}
+      for(int r=0;r<8;r++){
+        digitalWrite(relePin[r], HIGH);
+        reles[r].encendido = false;
+      }
 
-if(millis() - timerClima > 600000){ // cada 10 min
-  timerClima = millis();
-  consultarClima();
-}
+      esperandoApagadoRele = false;
+      esperaBomba = false;
+      bloqueoBombaManual = millis();
+      guardarEvento("⛔ BLOQUEO FISICO ACTIVADO\nSistema detenido ");
+      enviarATodos("⛔ BLOQUEO FISICO ACTIVADO\nSistema detenido");
 
-if(esperandoApagadoRele && millis() - timerApagadoRele >= 2000){
+    }else{
 
-  digitalWrite(relePin[relePendienteApagado],HIGH);
-  reles[relePendienteApagado].encendido=false;
+      bloqueoActivoGlobal = false;
+      bloqueoBombaManual = millis();
+      guardarEvento("✅ BLOQUEO DESACTIVADO\nSistema reanudado");
+      enviarATodos("✅ BLOQUEO DESACTIVADO\nSistema reanudado");
+    }
 
-  esperandoApagadoRele = false;
-}
-
-controlarWiFi();
-
-/* actualizar reloj cada segundo */
-if(now - timerClock > 100){
-  timerClock = now;
-  actualizarHora();
-}
-
-/* leer sensor cada 3 segundos */
-if(now - timerSensor > 500){
-  timerSensor = now;
-  leerSensor();
-}
-
-/* revisar telegram */
-if(now - timerTelegram > 1000){
-  timerTelegram = now;
-  manejarTelegram();
-}
-
-/* ejecutar horarios de riego */
-struct tm timeinfo;
-if(getLocalTime(&timeinfo)){
-  controlMultiplesHorarios(timeinfo.tm_hour, timeinfo.tm_min);
-}
-reconectarWiFi();
-controlarTanque();
-
-
-/* Apaga todos los RELE si se mantiene presionado */
-if(digitalRead(BottOFF) == LOW && millis() - debounceOFF > 300){
-
-  debounceOFF = millis();
-
-  for(int r=0;r<8;r++){
-    digitalWrite(relePin[r],HIGH);
-    reles[r].encendido=false;
+    bloqueoAnterior = bloqueoActual;
   }
 
-  bot->sendMessage(CHAT_ID,"⛔ Todos apagados manualmente","");
-}
+  // parpadeo LED
+  if(bloqueoActual){
 
-///CONTEO PARA RESET DE LA PLACA//
-if(reinicioPendiente && millis() - timerReinicio >= 8000){
-  ESP.restart();
-}
+    static unsigned long t = 0;
+    static bool estado = false;
+
+    if(millis() - t >= 300){
+      t = millis();
+      estado = !estado;
+    }
+
+    setColor(estado,0,0);
+
+  }else{
+    actualizarLED();
+  }
+
+  // tareas siguientes
+
+  controlarBotonAUX();
+  controlarTanque();
+  controlarBomba();
 
 
-/* reset RED WiFi si se mantiene presionado */
-if (digitalRead(Bottreset) == LOW) {
-  delay(4000);
-  WiFiManager wm;
-  wm.resetSettings();
-  ESP.restart();
-}
+  if(now - timerClock > 1000){
+    timerClock = now;
+    actualizarHora();
+  }
 
+  if(now - timerSensor > 2000){   
+    timerSensor = now;
+    leerSensor();
+  }
+
+  // CONTROL DE RIEGO
+
+  struct tm timeinfo;
+  if(getLocalTime(&timeinfo)){
+    controlMultiplesHorarios(timeinfo.tm_hour, timeinfo.tm_min);
+  }
+
+  // wifi
+
+  static unsigned long timerWiFi = 0;
+
+  if(now - timerWiFi > 3000){
+    timerWiFi = now;
+    reconectarWiFi();
+    controlarWiFi();
+  }
+
+  // telegram
+
+  if(now - timerTelegram > 5000){   
+    timerTelegram = now;
+
+    if(WiFi.status() == WL_CONNECTED){
+      manejarTelegram();
+    }
+  }
+
+  // clima
+
+  if(now - timerClima > 900000){   // ⬅️ 15 minutos
+    timerClima = now;
+    consultarClima();
+  }
+
+  // retardo bomba 
+
+  if(esperaBomba && now - timerBomba >= 500){  
+    digitalWrite(relePin[7],LOW);
+    reles[7].encendido=true;
+    esperaBomba = false;
+  }
+
+  
+
+  if(esperandoApagadoRele && now - timerApagadoRele >= 1000){
+    digitalWrite(relePin[relePendienteApagado],HIGH);
+    reles[relePendienteApagado].encendido=false;
+    esperandoApagadoRele = false;
+  }
+
+  // reporte conexion ok
+
+  if(now - timerReporte > 7200000){
+    enviarATodos("📡 Sistema OK\n");
+    timerReporte = now;
+  }
+
+  // boton todos off
+
+  if(digitalRead(BottOFF) == LOW && now - debounceOFF > 300){
+
+    debounceOFF = now;
+
+    for(int r=0;r<8;r++){
+      digitalWrite(relePin[r],HIGH);
+      reles[r].encendido=false;
+    }
+    guardarEvento("⛔ Todos los Rele ACTIVOS apagados desde boton físico (LOCAL)");
+    bot->sendMessage(CHAT_ID,"⛔ Todos los Rele ACTIVOS apagados desde boton físico (LOCAL)","");
+  }
+
+  // reinicio
+
+  if(reinicioPendiente && now - timerReinicio >= 8000){
+    ESP.restart();
+  }
+
+  // reset wifi
+
+  static unsigned long inicioReset = 0;
+
+  if(digitalRead(Bottreset) == LOW){
+
+    if(inicioReset == 0){
+      inicioReset = now;
+    }
+
+    if(now - inicioReset > 4000){
+      WiFiManager wm;
+      guardarEvento("Reseteo de REDWIFI");
+      wm.resetSettings();
+      ESP.restart();
+    }
+
+  } else {
+    inicioReset = 0;
+  }
 }
