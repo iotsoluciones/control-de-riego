@@ -1,0 +1,8 @@
+bblanchon/ArduinoJson@^7.2.2
+adafruit/Adafruit GFX Library@^1.12.6
+bodmer/TFT_eSPI@^2.5.43
+adafruit/DHT sensor library@^1.4.7
+cotestatnt/AsyncTelegram2@^2.3.4
+tzapu/WiFiManager@^2.0.16-rc.2
+adafruit/Adafruit SSD1306@^2.5.16
+knolleary/PubSubClient@^2.8
