@@ -288,7 +288,7 @@ if(hayComandoTelegram){
 
   // clima
 
-  if(nowe - timerClima > 3600000){   // ⬅️ c/ 
+  if(nowe - timerClima > 18000000){   // ⬅️ c/ 
     timerClima = nowe;
     consultarClima();
   }
