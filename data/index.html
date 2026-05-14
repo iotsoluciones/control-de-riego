@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌱 Sistema de Riego IOT</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌱 Sistema de Riego IOT</h1>
+            <p class="subtitle">Monitoreo en Tiempo Real</p>
+        </header>
+
+        <main>
+            <!-- Tarjeta de Firmware -->
+            <div class="card">
+                <div class="label">📦 Firmware</div>
+                <div class="valor" id="firmware">v1.1</div>
+            </div>
+
+            <!-- Tarjeta de Humedad -->
+            <div class="card">
+                <div class="label">💧 Humedad del Suelo</div>
+                <div class="valor" id="humedad">--</div>
+                <div class="progress">
+                    <div class="progress-bar" id="humedadBar" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Tarjeta de Temperatura -->
+            <div class="card">
+                <div class="label">🌡️ Temperatura</div>
+                <div class="valor" id="temperatura">--</div>
+                <div class="progress">
+                    <div class="progress-bar temp" id="temperaturaBar" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Tarjeta de WiFi -->
+            <div class="card">
+                <div class="label">📡 Señal WiFi</div>
+                <div class="valor" id="rssi">--</div>
+                <div class="wifi-indicator" id="wifiStatus">
+                    <span class="dot"></span> Desconectado
+                </div>
+            </div>
+
+            <!-- Tarjeta de Estado -->
+            <div class="card">
+                <div class="label">⚙️ Estado del Sistema</div>
+                <div class="valor estado-online" id="estado">ONLINE</div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="actions">
+                <a href="/update" class="btn btn-primary">🔄 OTA Update</a>
+                <button class="btn btn-secondary" onclick="refrescarDatos()">🔃 Refrescar</button>
+            </div>
+        </main>
+
+        <footer>
+            <p>Última actualización: <span id="lastUpdate">--:--:--</span></p>
+            <p>SolucionesIOT © 2026</p>
+        </footer>
+    </div>
+
+    <script src="/script.js"></script>
+</body>
+</html>
