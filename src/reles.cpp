@@ -73,7 +73,7 @@ if(necesitaBomba && !estadoAnteriorBomba){
 // esperar 1 segundo antes de prender bomba
 if(necesitaBomba && !bombaEncendida){
 
-    if(millis() - tiempoCambioBomba >= 1000){
+    if(millis() - tiempoCambioBomba >= 800){
 
         digitalWrite(relePin[7], LOW);
 
