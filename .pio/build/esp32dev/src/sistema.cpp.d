@@ -192,9 +192,6 @@
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiUdp.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/cores/esp32/Udp.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/cores/esp32/cbuf.h \
- .pio/libdeps/esp32dev/AsyncTCP/src/AsyncTCP.h \
- .pio/libdeps/esp32dev/AsyncTCP/src/AsyncTCPVersion.h \
- C:/Users/javit/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/lwip/lwip/src/include/lwip/pbuf.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src/WebServer.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src/HTTP_Method.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/nghttp/port/include/http_parser.h \

@@ -1,5 +1,4 @@
 #include <WiFi.h>
-#include <AsyncTCP.h>
 #include <WebServer.h>
 #include <ElegantOTA.h>
 
@@ -112,9 +111,155 @@ if(WiFi.status()==WL_CONNECTED){
 
 server.on("/", HTTP_GET, []() {
 
-    server.send(200, "text/plain", "ESP32 ONLINE");
+String html = R"rawliteral(
+
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Riego IOT</title>
+
+<meta http-equiv="refresh" content="5">
+
+<style>
+
+body{
+    background:#101820;
+    color:white;
+    font-family:Arial;
+    text-align:center;
+    margin:0;
+    padding:20px;
+}
+
+.card{
+    background:#1b2a3a;
+    border-radius:20px;
+    padding:20px;
+    margin-top:20px;
+    box-shadow:0 0 15px rgba(0,0,0,0.4);
+}
+
+h1{
+    color:#00ff99;
+}
+
+.valor{
+    font-size:35px;
+    font-weight:bold;
+}
+
+.label{
+    font-size:18px;
+    color:#bbbbbb;
+}
+
+.boton{
+    background:#00cc66;
+    color:white;
+    border:none;
+    border-radius:15px;
+    width:220px;
+    height:60px;
+    font-size:20px;
+    margin-top:20px;
+}
+
+.estadook{
+    color:#00ff99;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>🌱 Sistema de Riego</h1>
+
+<div class="card">
+
+<div class="label">Firmware</div>
+<div class="valor">v1.1</div>
+
+</div>
+
+<div class="card">
+
+<div class="label">Humedad</div>
+
+<div class="valor">
+)rawliteral";
+
+html += String(humedad,1);
+
+html += R"rawliteral(
+ %
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="label">Temperatura</div>
+
+<div class="valor">
+)rawliteral";
+
+html += String(temperatura,1);
+
+html += R"rawliteral(
+ °C
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="label">WiFi RSSI</div>
+
+<div class="valor">
+)rawliteral";
+
+html += String(WiFi.RSSI());
+
+html += R"rawliteral(
+ dBm
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="label">Estado Sistema</div>
+
+<div class="valor estadook">
+ONLINE
+</div>
+
+</div>
+
+<br>
+
+<a href="/update">
+<button class="boton">
+OTA UPDATE
+</button>
+</a>
+
+</body>
+</html>
+
+)rawliteral";
+
+server.send(200, "text/html", html);
 
 });
+
 
 server.on("/estado", HTTP_GET, []() {
 
@@ -133,6 +278,31 @@ ElegantOTA.begin(&server);
 server.begin();
 
 Serial.println("Servidor web iniciado");
+
+
+/////////////////////SI HAY ACTUALIZACION OTA EN CURSO, BLOQUEO LOOP ////////////7
+
+ElegantOTA.onStart([]() {
+
+    OTAEnCurso = true;
+
+    Serial.println("OTA iniciada");
+
+    enviarATodos("🔄 Actualizacion OTA iniciada");
+
+});
+
+ElegantOTA.onEnd([](bool success) {
+
+    OTAEnCurso = false;
+
+    Serial.println("OTA finalizada");
+
+    enviarATodos("✅ OTA completada correctamente");
+
+});
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /* 
 ArduinoOTA.setHostname("SolucioinesIOT");  
@@ -172,6 +342,12 @@ bloqueoArranque = millis();
 }
 
 void loopSistema(){
+server.handleClient();
+
+if(OTAEnCurso){
+  return; // ⛔ corta TODO el loop mientras OTA en curso
+}
+
 
 if(inicio){
 
@@ -197,29 +373,6 @@ if(inicio){
     }
 }
 
-ElegantOTA.onStart([]() {
-
-    OTAEnCurso = true;
-
-    Serial.println("OTA iniciada");
-
-    enviarATodos("🔄 Actualizacion OTA iniciada");
-
-});
-
-ElegantOTA.onEnd([](bool success) {
-
-    OTAEnCurso = false;
-
-    Serial.println("OTA finalizada");
-
-    enviarATodos("✅ OTA completada correctamente");
-
-});
-
-if(OTAEnCurso){
-  return; // ⛔ corta TODO el loop mientras OTA en curso
-}
 
 
 /*   ArduinoOTA.handle(); */
