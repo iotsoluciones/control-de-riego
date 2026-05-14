@@ -58,6 +58,7 @@ extern unsigned long timerClock;
 extern unsigned long timerSensor;
 
 // ===== ESTADOS =====
+extern bool OTAEnCurso;
 extern bool wifiAnterior;
 extern bool bombaEncendida;
 extern bool ultimoEstadoTanque;

@@ -1,4 +1,8 @@
 #include <WiFi.h>
+#include <AsyncTCP.h>
+#include <WebServer.h>
+#include <ElegantOTA.h>
+
 #include "seguridad.h"
 #include "telegram.h"
 #include "funciones.h"
@@ -10,6 +14,8 @@
 #include "horarios.h"
 #include "reles.h"
 #include "conexion_wifi.h"
+
+WebServer server(80);
 
 void iniciarSistema(){
 
@@ -54,7 +60,6 @@ prefs.end();
 
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
     Serial.println("Error display");
-    while(true);
   }
 
 display.clearDisplay();
@@ -103,9 +108,36 @@ delay(50);
 if(WiFi.status()==WL_CONNECTED){
 }
 
+
+
+server.on("/", HTTP_GET, []() {
+
+    server.send(200, "text/plain", "ESP32 ONLINE");
+
+});
+
+server.on("/estado", HTTP_GET, []() {
+
+    String html;
+
+    html += "Humedad: " + String(humedad,1) + "<br>";
+    html += "Temperatura: " + String(temperatura,1) + " °C<br>";
+    html += "WiFi RSSI: " + String(WiFi.RSSI());
+
+    server.send(200, "text/html", html);
+
+});
+
+ElegantOTA.begin(&server);
+
+server.begin();
+
+Serial.println("Servidor web iniciado");
+
+/* 
 ArduinoOTA.setHostname("SolucioinesIOT");  
 ArduinoOTA.setPassword("1234");    // contraseña para cargar actualizacion OTA 
-ArduinoOTA.begin();
+ArduinoOTA.begin(); */
 
 /* CONFIGURACION */
 prefs.begin("config",true);
@@ -134,8 +166,8 @@ leerSensores();
 inicio = true;
 bloqueoArranque = millis(); 
 
-ArduinoOTA.begin();
- 
+/* ArduinoOTA.begin();
+  */
 
 }
 
@@ -164,7 +196,33 @@ if(inicio){
         }
     }
 }
-  ArduinoOTA.handle();
+
+ElegantOTA.onStart([]() {
+
+    OTAEnCurso = true;
+
+    Serial.println("OTA iniciada");
+
+    enviarATodos("🔄 Actualizacion OTA iniciada");
+
+});
+
+ElegantOTA.onEnd([](bool success) {
+
+    OTAEnCurso = false;
+
+    Serial.println("OTA finalizada");
+
+    enviarATodos("✅ OTA completada correctamente");
+
+});
+
+if(OTAEnCurso){
+  return; // ⛔ corta TODO el loop mientras OTA en curso
+}
+
+
+/*   ArduinoOTA.handle(); */
 
 
   ///// BLOQUEO DE SEGURIDAD

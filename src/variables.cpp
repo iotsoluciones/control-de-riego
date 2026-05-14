@@ -49,6 +49,7 @@ unsigned long timerClock = 0;
 unsigned long timerSensor = 0;
 
 // ===== ESTADOS =====
+bool OTAEnCurso = false;
 bool wifiAnterior = true;
 bool bombaEncendida = false;
 bool ultimoEstadoTanque = false;

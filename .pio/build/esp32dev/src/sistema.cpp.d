@@ -192,6 +192,23 @@
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiUdp.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/cores/esp32/Udp.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/cores/esp32/cbuf.h \
+ .pio/libdeps/esp32dev/AsyncTCP/src/AsyncTCP.h \
+ .pio/libdeps/esp32dev/AsyncTCP/src/AsyncTCPVersion.h \
+ C:/Users/javit/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/lwip/lwip/src/include/lwip/pbuf.h \
+ C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src/WebServer.h \
+ C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src/HTTP_Method.h \
+ C:/Users/javit/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/nghttp/port/include/http_parser.h \
+ C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src/Uri.h \
+ C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src/detail/RequestHandler.h \
+ .pio/libdeps/esp32dev/ElegantOTA/src/ElegantOTA.h \
+ C:/Users/javit/.platformio/packages/framework-arduinoespressif32/cores/esp32/stdlib_noniso.h \
+ .pio/libdeps/esp32dev/ElegantOTA/src/elop.h \
+ C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/FS/src/FS.h \
+ C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/Update/src/Update.h \
+ C:/Users/javit/.platformio/packages/framework-arduinoespressif32/cores/esp32/MD5Builder.h \
+ C:/Users/javit/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_rom/include/esp_rom_md5.h \
+ C:/Users/javit/.platformio/packages/framework-arduinoespressif32/cores/esp32/StreamString.h \
+ C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiClient.h \
  include/seguridad.h include/telegram.h include/funciones.h \
  include/variables.h include/config.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/WiFiClientSecure/src/WiFiClientSecure.h \
@@ -237,7 +254,6 @@
  .pio/libdeps/esp32dev/ArduinoJson/src/ArduinoJson.h \
  .pio/libdeps/esp32dev/ArduinoJson/src/ArduinoJson.hpp \
  .pio/libdeps/esp32dev/ArduinoJson/src/ArduinoJson/Configuration.hpp \
- C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/FS/src/FS.h \
  .pio/libdeps/esp32dev/AsyncTelegram2/src/DataStructures.h \
  .pio/libdeps/esp32dev/AsyncTelegram2/src/InlineKeyboard.h \
  .pio/libdeps/esp32dev/AsyncTelegram2/src/ReplyKeyboard.h \
@@ -249,14 +265,6 @@
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_wifi/include/esp_wifi_crypto_types.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_wifi/include/esp_private/wifi_os_adapter.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_wifi/include/esp_wifi_default.h \
- C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/Update/src/Update.h \
- C:/Users/javit/.platformio/packages/framework-arduinoespressif32/cores/esp32/MD5Builder.h \
- C:/Users/javit/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_rom/include/esp_rom_md5.h \
- C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src/WebServer.h \
- C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src/HTTP_Method.h \
- C:/Users/javit/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/nghttp/port/include/http_parser.h \
- C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src/Uri.h \
- C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src/detail/RequestHandler.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/DNSServer/src/DNSServer.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiUdp.h \
  .pio/libdeps/esp32dev/WiFiManager/wm_strings_en.h \
@@ -264,7 +272,6 @@
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/Preferences/src/Preferences.h \
  .pio/libdeps/esp32dev/DHT\ sensor\ library/DHT.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/HTTPClient/src/HTTPClient.h \
- C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiClient.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src/Wire.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal.h \
  .pio/libdeps/esp32dev/Adafruit\ GFX\ Library/Adafruit_GFX.h \
