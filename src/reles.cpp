@@ -208,7 +208,9 @@ void apagarTodosReles(){
   }
 
 void ejecutarRele(int r, String origen, String usuario, String chat_id){
- 
+    
+  bloqueoEventosCriticos = millis();
+
   bloqueoManualTiempo = millis();
 
   if(reles[r].encendido){

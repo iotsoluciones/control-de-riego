@@ -80,7 +80,7 @@ iniciarReles();
 iniciarWifi();
 WiFi.setSleep(false);
 clientTelegram.setInsecure();
-clientTelegram.setTimeout(500);
+clientTelegram.setTimeout(250);
 myBot.setUpdateTime(100);
 myBot.setTelegramToken(BOTtoken.c_str());
 myBot.begin();
@@ -277,22 +277,25 @@ if(hayComandoTelegram){
     controlMultiplesHorarios(timeinfo.tm_hour, timeinfo.tm_min);
   }
 
+
   // wifi
 
+  if(millis() - bloqueoEventosCriticos > 5000){
   if(nowe - timerWiFi > 5000){
     timerWiFi = nowe;
     reconectarWiFi();
     controlarWiFi();
   }
+}
 
 
   // clima
-
+if(millis() - bloqueoEventosCriticos > 18000){
   if(nowe - timerClima > 18000000){   // ⬅️ c/ 
     timerClima = nowe;
     consultarClima();
   }
-
+}
 
 
   if(esperandoApagadoRele && nowe - timerApagadoRele >= 60000){
@@ -317,11 +320,11 @@ if(hayComandoTelegram){
   }
 
   // reinicio
-
+if(millis() - bloqueoEventosCriticos > 3000){
   if(reinicioPendiente && nowe - timerReinicio >= 80000){
     ESP.restart();
   }
-
+}
 
 
 // 👉 cuando soltás el botón

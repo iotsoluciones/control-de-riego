@@ -21,6 +21,10 @@ String ultimoMensajeID = "";
 String idSalirPendiente = "";
 
 void enviarTelegram(String chatId, String texto){
+  
+    if(WiFi.status() != WL_CONNECTED){
+    return;
+       }
 
     TBMessage msg;
 

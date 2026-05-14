@@ -27,7 +27,7 @@ String eventos[MAX_EVENTOS];
 int indiceEvento = 0;
 
 // ===== TIMERS =====
-
+unsigned long bloqueoEventosCriticos = 0;
 unsigned long timerCambioBomba = 0;
 unsigned long ultimoCambioBloqueo = 0;
 unsigned long timerWiFi = 0;
@@ -49,6 +49,7 @@ unsigned long timerClock = 0;
 unsigned long timerSensor = 0;
 
 // ===== ESTADOS =====
+bool wifiAnterior = true;
 bool bombaEncendida = false;
 bool ultimoEstadoTanque = false;
 bool avisoInicioEnviado =false;

@@ -54,25 +54,33 @@ guardarEvento(
 
 }
 
-void controlarWiFi()
-{
+void controlarWiFi(){
 
-bool estadoActual = WiFi.status()==WL_CONNECTED;
+bool wifiActual = WiFi.status() == WL_CONNECTED;
 
-if(estadoActual != wifiEstadoAnterior){
+// SE CORTO
+if(!wifiActual && wifiAnterior){
 
-if(!estadoActual){
+    guardarEvento("📡 WiFi DESCONECTADO");
 
-enviarTelegram(CHAT_ID,"⚠️ WiFi desconectado");
+    Serial.println("WIFI DESCONECTADO");
 
-}else{
-
-enviarTelegram(CHAT_ID,"✅ WiFi reconectado");
-
+    wifiAnterior = false;
 }
 
-wifiEstadoAnterior=estadoActual;
+// VOLVIO
+if(wifiActual && !wifiAnterior){
 
+    delay(200);
+    guardarEvento("📡 WiFi RECONECTADO");
+
+    enviarATodos(
+    "📡 WiFi RECONECTADO\n\n"
+    "🌐 IP: " + WiFi.localIP().toString()
+    );
+
+    Serial.println("WIFI RECONECTADO");
+
+    wifiAnterior = true;
 }
-
 }

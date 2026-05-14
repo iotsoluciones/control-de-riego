@@ -35,6 +35,7 @@ extern String eventos[MAX_EVENTOS];
 extern int indiceEvento;
 
 // ===== TIMERS =====
+extern unsigned long bloqueoEventosCriticos;
 extern bool estadoAnteriorBomba;
 extern unsigned long timerCambioBomba;
 extern unsigned long ultimoCambioBloqueo;
@@ -57,6 +58,7 @@ extern unsigned long timerClock;
 extern unsigned long timerSensor;
 
 // ===== ESTADOS =====
+extern bool wifiAnterior;
 extern bool bombaEncendida;
 extern bool ultimoEstadoTanque;
 extern bool avisoInicioEnviado;
