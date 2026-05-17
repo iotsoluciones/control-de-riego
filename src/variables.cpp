@@ -49,6 +49,7 @@ unsigned long timerClock = 0;
 unsigned long timerSensor = 0;
 
 // ===== ESTADOS =====
+
 bool OTAEnCurso = false;
 bool wifiAnterior = true;
 bool bombaEncendida = false;
@@ -105,6 +106,10 @@ String BOTtoken;
 
 String CHAT_ID;
 
+
+String colaMensajes[20];
+
+int totalMensajes = 0;
 // ===== USUARIOS =====
 
 String usuarios[MAX_USERS];

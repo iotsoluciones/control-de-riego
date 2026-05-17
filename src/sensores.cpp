@@ -5,8 +5,17 @@
 
 void leerSensores()
 {
-  temperatura = dht.readTemperature();
-  humedad = dht.readHumidity();
+float t = dht.readTemperature();
+float h = dht.readHumidity();
+
+if(!isnan(t)){
+    temperatura = t;
+}
+
+if(!isnan(h)){
+    humedad = h;
+}
+
 
   // 🌱 SENSOR HUMEDAD DE SUELO
   int valorSuelo = analogRead(35);

@@ -105,6 +105,10 @@ extern int humedadSuelo;
 extern int humedadSueloLimite;
 
 // ===== TELEGRAM =====
+extern String colaMensajes[20];
+extern int totalMensajes;
+
+void procesarMensajesPendientes();
 
 extern String BOTtoken;
 extern String CHAT_ID;

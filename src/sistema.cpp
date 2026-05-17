@@ -407,6 +407,7 @@ if(inicio){
     }
 
  manejarTelegram();
+ procesarMensajesPendientes();
 
 
 static unsigned long ultimoPrint = 0;
@@ -476,11 +477,14 @@ if(hayComandoTelegram){
     actualizarHora();
   }
 
-   if(nowe - timerSensor > 3000){   
+
+  if(millis() - bloqueoEventosCriticos > 5000){
+   if(nowe - timerSensor > 10000){   
     timerSensor = nowe;
     leerSensores();
   } 
- 
+}
+
   // CONTROL DE RIEGO
 
   struct tm timeinfo;

@@ -27,14 +27,7 @@ void controlMultiplesHorarios(int hora,int minuto){
     bloqueoLluviaTiempo = millis();
   }
 
-  // mantener bloqueo 3 horas
-  if(lluviaBloqueada){
-    if(millis() - bloqueoLluviaTiempo < 10800000){
-      lluviaActual = true;
-    } else {
-      lluviaBloqueada = false;
-    }
-  }
+ 
 
   bool lluviaActiva = lluviaActual;
 
@@ -76,7 +69,7 @@ void controlMultiplesHorarios(int hora,int minuto){
           digitalWrite(relePin[7], HIGH);
           reles[7].encendido = false;
         }
-
+        Serial.println("Riego finalizado automaticamente: " + reles[r].nombre);
         enviarATodos("✅ "+reles[r].nombre+" finalizado con exito!!");
       }
     }
@@ -140,7 +133,7 @@ void controlMultiplesHorarios(int hora,int minuto){
 
           reles[r].inicio = millis();
           reles[r].ultimoMinuto = minuto;
-
+          Serial.println("Riego iniciado automaticamente: " + reles[r].nombre);
           enviarATodos("⚡ Activacion automatica: " + reles[r].nombre);
         }
       } 

@@ -1353,45 +1353,110 @@ enviarTelegram(chat_id,
 
   clientTelegram.stop();
 }
- 
+
 void enviarATodos(const String mensaje){
 
     Serial.println("===== ENVIAR A TODOS =====");
 
-    // ADMIN
-    Serial.print("ADMIN: ");
-    Serial.println(CHAT_ID);
+    Serial.print("Mensaje: ");
+    Serial.println(mensaje);
 
-    enviarTelegram(CHAT_ID, mensaje);
+    Serial.print("WiFi: ");
+    Serial.println(WiFi.status());
+
+    Serial.print("RSSI: ");
+    Serial.println(WiFi.RSSI());
+
+    Serial.print("Heap: ");
+    Serial.println(ESP.getFreeHeap());
+
+    Serial.print("Usuarios: ");
+    Serial.println(cantidadUsuarios);
+
+    if(WiFi.status()!=WL_CONNECTED){
+
+        Serial.println("ERROR WIFI DESCONECTADO");
+
+        return;
+    }
+
+    enviarTelegram(CHAT_ID,mensaje);
 
     delay(200);
 
-    // USUARIOS
-    for(int i=0; i<cantidadUsuarios; i++){
+    for(int i=0;i<cantidadUsuarios;i++){
 
-        Serial.print("USUARIO ");
-        Serial.print(i);
-        Serial.print(": ");
+        Serial.print("ID: ");
         Serial.println(usuariosID[i]);
 
-        // vacío
-        if(usuariosID[i] == ""){
-            Serial.println("VACIO");
+        if(usuariosID[i]==""){
+
+            Serial.println("ID VACIO");
+
             continue;
         }
 
-        // evitar duplicado admin
-        if(usuariosID[i] == CHAT_ID){
+        if(usuariosID[i]==CHAT_ID){
+
             Serial.println("ADMIN DUPLICADO");
+
             continue;
         }
 
-        enviarTelegram(usuariosID[i], mensaje);
+        Serial.println("ENVIANDO...");
 
-        Serial.println("ENVIADO OK");
+        enviarTelegram(
+            usuariosID[i],
+            mensaje
+        );
+
+        Serial.println("OK");
 
         delay(300);
     }
 
-    Serial.println("==========================");
+    Serial.println("===== FIN =====");
+}
+
+void procesarMensajesPendientes(){
+
+    static unsigned long ultimoEnvio = 0;
+
+    if(millis() - ultimoEnvio < 1200){
+        return;
+    }
+
+    if(totalMensajes <= 0){
+        return;
+    }
+
+    Serial.println("===== MENSAJE =====");
+
+    Serial.print("Cola: ");
+    Serial.println(totalMensajes);
+
+    Serial.print("Mensaje: ");
+    Serial.println(colaMensajes[0]);
+
+    Serial.print("WiFi: ");
+    Serial.println(WiFi.status());
+
+    Serial.print("RSSI: ");
+    Serial.println(WiFi.RSSI());
+
+    Serial.print("Heap: ");
+    Serial.println(ESP.getFreeHeap());
+
+    ultimoEnvio = millis();
+
+    enviarATodos(colaMensajes[0]);
+
+    for(int i=0;i<totalMensajes-1;i++){
+
+        colaMensajes[i]=colaMensajes[i+1];
+    }
+
+    totalMensajes--;
+
+    Serial.println("===== FIN =====");
 }
