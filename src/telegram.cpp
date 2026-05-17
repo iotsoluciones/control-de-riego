@@ -20,18 +20,27 @@ String nombreUsuario = "";
 String ultimoMensajeID = "";
 String idSalirPendiente = "";
 
-void enviarTelegram(String chatId, String texto){
-  
-    if(WiFi.status() != WL_CONNECTED){
-    return;
-       }
+bool enviarTelegram(String chatid, String texto){
+
+    if(WiFi.status()!=WL_CONNECTED){
+        Serial.println("❌ Sin WiFi");
+        return false;
+    }
+
+    Serial.print("Telegram -> ");
+    Serial.println(chatid);
 
     TBMessage msg;
 
-    msg.chatId = atoll(chatId.c_str());
+    int64_t idTelegram = atoll(chatid.c_str());
+
+    msg.chatId = idTelegram;
 
     myBot.sendMessage(msg, texto);
 
+    Serial.println("✅ Enviado");
+
+    return true;
 }
 
 void manejarTelegram(){
@@ -1356,7 +1365,7 @@ enviarTelegram(chat_id,
 
 void enviarATodos(const String mensaje){
 
-    Serial.println("===== ENVIAR A TODOS =====");
+    Serial.println("\n===== ENVIAR A TODOS =====");
 
     Serial.print("Mensaje: ");
     Serial.println(mensaje);
@@ -1373,16 +1382,27 @@ void enviarATodos(const String mensaje){
     Serial.print("Usuarios: ");
     Serial.println(cantidadUsuarios);
 
+    Serial.print("Tiempo: ");
+    Serial.println(millis());
+
     if(WiFi.status()!=WL_CONNECTED){
 
-        Serial.println("ERROR WIFI DESCONECTADO");
-
+        Serial.println("❌ WIFI DESCONECTADO");
         return;
     }
 
-    enviarTelegram(CHAT_ID,mensaje);
+    Serial.println("ADMIN...");
 
-    delay(200);
+    bool okAdmin = enviarTelegram(CHAT_ID,mensaje);
+
+    if(okAdmin){
+        Serial.println("✅ ADMIN OK");
+    }else{
+        Serial.println("❌ ADMIN ERROR");
+    }
+
+    delay(1200);
+    yield();
 
     for(int i=0;i<cantidadUsuarios;i++){
 
@@ -1390,32 +1410,41 @@ void enviarATodos(const String mensaje){
         Serial.println(usuariosID[i]);
 
         if(usuariosID[i]==""){
-
             Serial.println("ID VACIO");
-
             continue;
         }
 
         if(usuariosID[i]==CHAT_ID){
-
             Serial.println("ADMIN DUPLICADO");
-
             continue;
         }
 
         Serial.println("ENVIANDO...");
 
-        enviarTelegram(
+        bool ok = enviarTelegram(
             usuariosID[i],
             mensaje
         );
 
-        Serial.println("OK");
+        if(ok){
+            Serial.println("✅ OK");
+        }else{
+            Serial.println("❌ ERROR ENVIO");
+        }
 
-        delay(300);
+        delay(1200);
+        yield();
+
+        Serial.print("Heap actual: ");
+        Serial.println(ESP.getFreeHeap());
+
+        Serial.print("RSSI actual: ");
+        Serial.println(WiFi.RSSI());
+
+        Serial.println("----------------");
     }
 
-    Serial.println("===== FIN =====");
+    Serial.println("===== FIN =====\n");
 }
 
 void procesarMensajesPendientes(){

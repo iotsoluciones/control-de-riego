@@ -1,6 +1,4 @@
 .pio/build/esp32dev/src/web_server.cpp.o: src/web_server.cpp User_Setup.h \
- include/web_server.h \
- C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src/WebServer.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFi.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/cores/esp32/Print.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/cores/esp32/WString.h \
@@ -109,6 +107,7 @@
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/lwip/lwip/src/include/lwip/debug.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/lwip/lwip/src/include/lwip/arch.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/lwip/port/esp32/include/arch/cc.h \
+ C:/Users/javit/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/newlib/platform_include/errno.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/lwip/port/esp32/include/arch/sys_arch.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/lwip/port/esp32/include/arch/vfs_lwip.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/lwip/lwip/src/include/lwip/def.h \
@@ -193,6 +192,10 @@
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiUdp.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/cores/esp32/Udp.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/cores/esp32/cbuf.h \
+ C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/LittleFS/src/LittleFS.h \
+ C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/FS/src/FS.h \
+ include/web_server.h \
+ C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src/WebServer.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src/HTTP_Method.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/nghttp/port/include/http_parser.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src/Uri.h \
@@ -200,7 +203,6 @@
  .pio/libdeps/esp32dev/ElegantOTA/src/ElegantOTA.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/cores/esp32/stdlib_noniso.h \
  .pio/libdeps/esp32dev/ElegantOTA/src/elop.h \
- C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/FS/src/FS.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/Update/src/Update.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/cores/esp32/MD5Builder.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_rom/include/esp_rom_md5.h \
@@ -278,5 +280,4 @@
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-spi.h \
  .pio/libdeps/esp32dev/Adafruit\ SSD1306/Adafruit_SSD1306.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src/ArduinoOTA.h \
- include/telegram.h \
- C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/LittleFS/src/LittleFS.h
+ include/telegram.h

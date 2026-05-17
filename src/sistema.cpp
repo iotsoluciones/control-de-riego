@@ -1,5 +1,7 @@
 #include <WiFi.h>
-#include "web_server.h"
+#include <web_server.h>
+#include <ElegantOTA.h>
+
 
 #include "seguridad.h"
 #include "telegram.h"
@@ -12,6 +14,7 @@
 #include "horarios.h"
 #include "reles.h"
 #include "conexion_wifi.h"
+
 
 // ─────────────────────────────────────────────
 //  INIT
@@ -75,11 +78,13 @@ void iniciarSistema() {
     WiFi.setTxPower(WIFI_POWER_19_5dBm);
 
     clientTelegram.setInsecure();
-    clientTelegram.setTimeout(250);
-    myBot.setUpdateTime(100);
+    clientTelegram.setTimeout(1500);
+    myBot.setUpdateTime(1000);
     myBot.setTelegramToken(BOTtoken.c_str());
     myBot.begin();
+    delay(50);
 
+  
     display.clearDisplay();
     display.setCursor(0, 0);  display.println("SolucionesIOT");
     display.setCursor(0, 20); display.println("WiFi OK - Espere...");
@@ -113,11 +118,9 @@ void iniciarSistema() {
     bloqueoArranque = millis();
 }
 
-// ─────────────────────────────────────────────
-//  LOOP
-// ─────────────────────────────────────────────
 
 void loopSistema() {
+
 
     loopServidorWeb();   // ← reemplaza server.handleClient()
 
@@ -150,9 +153,15 @@ void loopSistema() {
         return;
     }
 
- manejarTelegram();
- procesarMensajesPendientes();
-    manejarTelegram();
+
+    static unsigned long timerTelegram = 0;
+    if(millis() - timerTelegram > 250){
+        timerTelegram = millis();
+        
+         manejarTelegram();
+        procesarMensajesPendientes();
+    }
+
 
     // --- Debug heap ---
     static unsigned long ultimoPrint = 0;
@@ -264,7 +273,5 @@ void loopSistema() {
         modoreset    = false;
     }
 
-
-static unsigned long timerTelegram = 0;
   }
 

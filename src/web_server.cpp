@@ -1,9 +1,11 @@
+#include <WiFi.h>
+#include <LittleFS.h>
+
 #include "web_server.h"
 #include "variables.h"
 #include "telegram.h"
 
-#include <WiFi.h>
-#include <LittleFS.h>
+
 
 WebServer server(80);
 
@@ -12,7 +14,7 @@ WebServer server(80);
 // ─────────────────────────────────────────────
 
 bool inicializarLittleFS() {
-    if (!LittleFS.begin()) {
+    if (!LittleFS.begin(true)) {
         Serial.println("❌ Error montando LittleFS");
         return false;
     }
@@ -24,66 +26,61 @@ bool inicializarLittleFS() {
 //  HANDLER: Servir archivos estáticos
 // ─────────────────────────────────────────────
 
-void handleFileRequest(String path) {
+void handleFileRequest(String path){
+
     Serial.print("📄 Solicitado: ");
     Serial.println(path);
-    
-    // Ruta por defecto
-    if (path == "/") {
+
+    if(path == "/"){
         path = "/index.html";
     }
-    
-    // Determinar tipo de contenido
-    String contentType = "text/plain";
-    if (path.endsWith(".html")) contentType = "text/html";
-    else if (path.endsWith(".css")) contentType = "text/css";
-    else if (path.endsWith(".js")) contentType = "application/javascript";
-    else if (path.endsWith(".json")) contentType = "application/json";
-    else if (path.endsWith(".png")) contentType = "image/png";
-    else if (path.endsWith(".jpg")) contentType = "image/jpeg";
-    else if (path.endsWith(".svg")) contentType = "image/svg+xml";
-    
-    // Intentar abrir archivo
-    if (LittleFS.exists(path)) {
-        File file = LittleFS.open(path, "r");
-        server.streamFile(file, contentType);
+
+    String contentType="text/plain";
+
+    if(path.endsWith(".html")) contentType="text/html";
+    else if(path.endsWith(".css")) contentType="text/css";
+    else if(path.endsWith(".js")) contentType="application/javascript";
+    else if(path.endsWith(".json")) contentType="application/json";
+    else if(path.endsWith(".png")) contentType="image/png";
+
+    if(LittleFS.exists(path)){
+
+        File file=LittleFS.open(path,"r");
+        server.streamFile(file,contentType);
         file.close();
-        Serial.print("✅ Archivo enviado: ");
-        Serial.println(path);
-    } else {
+
+        Serial.println("✅ Archivo enviado");
+    }
+    else{
+
         Serial.print("❌ Archivo no encontrado: ");
         Serial.println(path);
-        server.send(404, "text/plain", "Archivo no encontrado");
+
+        server.send(404,"text/plain","Archivo no encontrado");
     }
 }
-
-// ─────────────────────────────────────────────
-//  HANDLER: API /estado (JSON)
-// ─────────────────────────────────────────────
-
 void handleEstado() {
-    String json = R"rawliteral({
-    "humedad": )rawliteral";
-    
-    json += String(humedad, 1);
-    json += R"rawliteral(,
-    "temperatura": )rawliteral";
-    
-    json += String(temperatura, 1);
-    json += R"rawliteral(,
-    "rssi": )rawliteral";
-    
-    json += String(WiFi.RSSI());
-    json += R"rawliteral(
-})rawliteral";
-    
-    server.send(200, "application/json", json);
+
+    String json = "{";
+
+    json += "\"humedad\":" + String(humedad,1);
+    json += ",\"temperatura\":" + String(temperatura,1);
+    json += ",\"rssi\":" + String(WiFi.RSSI());
+
+    json += ",\"ip\":\"";
+    json += WiFi.localIP().toString();
+    json += "\"";
+
+    json += ",\"heap\":";
+    json += String(ESP.getFreeHeap());
+
+    json += ",\"tanque\":";
+    json += (tanqueNecesitaAgua ? "true" : "false");
+
+    json += "}";
+
+    server.send(200,"application/json",json);
 }
-
-// ─────────────────────────────────────────────
-//  INIT DEL SERVIDOR WEB
-// ─────────────────────────────────────────────
-
 void iniciarServidorWeb() {
     
     // Inicializar LittleFS
