@@ -89,7 +89,8 @@ float lon = 0;
 String ciudad = "Buenos Aires";
 
 // ===== SENSORES =====
-
+float ultimaTempOK = 0;
+float ultimaHumOK = 0;
 float temperatura = 0;
 float humedad = 0;
 float humedadLimite = 90;

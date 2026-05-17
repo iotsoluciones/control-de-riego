@@ -96,7 +96,8 @@ extern float lon;
 extern String ciudad;
 
 // ===== SENSORES =====
-
+extern float ultimaTempOK;
+extern float ultimaHumOK;
 extern float temperatura;
 extern float humedad;
 extern float humedadLimite;

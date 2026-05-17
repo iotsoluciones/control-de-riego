@@ -211,10 +211,16 @@ void loopSistema() {
         actualizarHora();
     }
 
-    if (nowe - timerSensor > 3000) {
-        timerSensor = nowe;
-        leerSensores();
-    }
+   
+///-------LEEMOS DHT Y SENSOR DE SUELO CADA 5 SEGUNDOS-------///
+unsigned long tSensores = 0;
+unsigned long ahora = millis();
+
+if(ahora - tSensores > 5000){
+    tSensores = ahora;
+    leerSensores();
+}
+
 
     // --- Horarios de riego ---
     struct tm timeinfo;

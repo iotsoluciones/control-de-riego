@@ -5,17 +5,45 @@
 
 void leerSensores()
 {
-float t = dht.readTemperature();
-float h = dht.readHumidity();
 
-if(!isnan(t)){
-    temperatura = t;
+static unsigned long tReinicioDHT=0;
+
+if(millis()-tReinicioDHT > 1800000){
+
+    Serial.println("♻ Reinicio preventivo DHT");
+
+    dht.begin();
+
+    tReinicioDHT=millis();
+
+    delay(100);
 }
 
-if(!isnan(h)){
-    humedad = h;
+yield();
+
+float t=dht.readTemperature();
+
+delay(50);
+
+float h=dht.readHumidity();
+
+if(isnan(t) || isnan(h)){
+
+    Serial.println("⚠ FALLO DHT");
+
+    dht.begin();
+
+    temperatura=ultimaTempOK;
+    humedad=ultimaHumOK;
+
+    return;
 }
 
+ultimaTempOK=t;
+ultimaHumOK=h;
+
+temperatura=t;
+humedad=h;
 
   // 🌱 SENSOR HUMEDAD DE SUELO
   int valorSuelo = analogRead(35);
