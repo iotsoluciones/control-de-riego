@@ -1,11 +1,11 @@
-ESP32Async/ESPAsyncWebServer
-adafruit/DHT sensor library@^1.4.7
-adafruit/Adafruit SSD1306@^2.5.16
-ESP32Async/AsyncTCP
-adafruit/Adafruit GFX Library@^1.12.6
 bblanchon/ArduinoJson@^7.2.2
-ayushsharma82/ElegantOTA
-bodmer/TFT_eSPI@^2.5.43
-tzapu/WiFiManager@^2.0.16-rc.2
-cotestatnt/AsyncTelegram2@^2.3.4
+ESP32Async/AsyncTCP
 knolleary/PubSubClient@^2.8
+ayushsharma82/ElegantOTA
+tzapu/WiFiManager@^2.0.16-rc.2
+ESP32Async/ESPAsyncWebServer
+bodmer/TFT_eSPI@^2.5.43
+adafruit/Adafruit GFX Library@^1.12.6
+adafruit/DHT sensor library@^1.4.7
+cotestatnt/AsyncTelegram2@^2.3.4
+adafruit/Adafruit SSD1306@^2.5.16

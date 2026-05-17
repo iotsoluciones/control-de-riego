@@ -63,7 +63,7 @@ void handleEstado() {
 
     String json = "{";
 
-    json += "\"humedad\":" + String(humedad,1);
+    json += "\"humedadSuelo\":" + String(humedad,1);
     json += ",\"temperatura\":" + String(temperatura,1);
     json += ",\"rssi\":" + String(WiFi.RSSI());
 
@@ -116,6 +116,11 @@ void iniciarServidorWeb() {
     });
     
     // --- Iniciar servidor ---
+    server.on("/ota", HTTP_GET, [](){
+
+    server.sendHeader("Location","/update");
+    server.send(302,"text/plain","");
+});
     server.begin();
     Serial.println("✅ Servidor web iniciado en puerto 80");
 }
@@ -126,4 +131,5 @@ void iniciarServidorWeb() {
 
 void loopServidorWeb() {
     server.handleClient();
+    ElegantOTA.loop();
 }

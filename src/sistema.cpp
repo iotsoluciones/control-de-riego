@@ -2,7 +2,6 @@
 #include <web_server.h>
 #include <ElegantOTA.h>
 
-
 #include "seguridad.h"
 #include "telegram.h"
 #include "funciones.h"
@@ -93,7 +92,8 @@ void iniciarSistema() {
 
     // --- Servidor Web (todo movido a web_server.cpp) ---
     iniciarServidorWeb();
-
+    
+    
     // --- Preferencias config (resto) ---
     prefs.begin("config", true);
     humedadLimite          = prefs.getFloat("humedadLimite", 90);
@@ -120,8 +120,7 @@ void iniciarSistema() {
 
 
 void loopSistema() {
-
-
+    
     loopServidorWeb();   // ← reemplaza server.handleClient()
 
     if (OTAEnCurso) return;   // ⛔ corta TODO el loop mientras OTA en curso
@@ -213,9 +212,8 @@ void loopSistema() {
 
    
 ///-------LEEMOS DHT Y SENSOR DE SUELO CADA 5 SEGUNDOS-------///
-unsigned long tSensores = 0;
+static unsigned long tSensores = 0;
 unsigned long ahora = millis();
-
 if(ahora - tSensores > 5000){
     tSensores = ahora;
     leerSensores();

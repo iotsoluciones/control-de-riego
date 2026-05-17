@@ -3,6 +3,7 @@
 #include "variables.h"
 #include "telegram.h"
 
+
 void leerSensores()
 {
 
@@ -11,7 +12,6 @@ static unsigned long tReinicioDHT=0;
 if(millis()-tReinicioDHT > 1800000){
 
     Serial.println("♻ Reinicio preventivo DHT");
-
     dht.begin();
 
     tReinicioDHT=millis();
@@ -30,7 +30,6 @@ float h=dht.readHumidity();
 if(isnan(t) || isnan(h)){
 
     Serial.println("⚠ FALLO DHT");
-
     dht.begin();
 
     temperatura=ultimaTempOK;
@@ -44,6 +43,11 @@ ultimaHumOK=h;
 
 temperatura=t;
 humedad=h;
+
+Serial.print("DHT Temperatura: ");
+Serial.print(temperatura);
+Serial.print(" | DHT Humedad: ");     ///////// mostramos por serial monitor
+Serial.println(humedad);
 
   // 🌱 SENSOR HUMEDAD DE SUELO
   int valorSuelo = analogRead(35);
