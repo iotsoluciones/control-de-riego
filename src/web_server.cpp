@@ -96,25 +96,42 @@ void iniciarServidorWeb() {
         handleFileRequest(server.uri());
     });
     
-    // --- Configurar OTA ---
-    ElegantOTA.begin(&server);
-    
-    // --- Callbacks OTA ---
-    ElegantOTA.onStart([]() {
-        OTAEnCurso = true;
-        Serial.println("📡 OTA iniciada");
-        enviarATodos("🔄 Actualización OTA iniciada");
-    });
+   // --- Configurar OTA ---
+ElegantOTA.begin(&server);
 
-    ElegantOTA.onEnd([](bool success) {
-        OTAEnCurso = false;
-        if (success) {
-            Serial.println("✅ OTA completada correctamente");
-        } else {
-            Serial.println("❌ Error durante OTA");
-        }
-    });
-    
+// --- Inicio OTA ---
+ElegantOTA.onStart([]() {
+
+    OTAEnCurso = true;
+
+    Serial.println("📡 OTA iniciada");
+    enviarATodos("🔄 Actualización OTA iniciada");
+});
+
+
+// --- Fin OTA ---
+ElegantOTA.onEnd([](bool success) {
+
+    OTAEnCurso = false;
+
+    if(success){
+
+        Serial.println("✅ OTA completada correctamente");
+
+        enviarATodos(
+            "✅ OTA finalizada correctamente\n"
+            "🚀 Sistema actualizado"
+        );
+    }
+    else{
+
+        Serial.println("❌ Error OTA");
+
+        enviarATodos(
+            "❌ Error durante actualización OTA"
+        );
+    }
+});
     // --- Iniciar servidor ---
     server.on("/ota", HTTP_GET, [](){
 

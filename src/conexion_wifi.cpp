@@ -20,6 +20,9 @@ wm.addParameter(&param_token);
 wm.addParameter(&param_chatid);
 
 wm.autoConnect("SolucionesIOT");
+Serial.println("Iniciando WiFiManager...");
+Serial.println(WiFi.SSID());
+Serial.println(WiFi.localIP());
 
 BOTtoken=param_token.getValue();
 CHAT_ID=param_chatid.getValue();

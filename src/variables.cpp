@@ -49,7 +49,7 @@ unsigned long timerClock = 0;
 unsigned long timerSensor = 0;
 
 // ===== ESTADOS =====
-
+bool esperandoFactoryReset = false;
 bool OTAEnCurso = false;
 bool wifiAnterior = true;
 bool bombaEncendida = false;
@@ -99,7 +99,7 @@ int humedadSuelo = 0;
 int humedadSueloLimite = 60;
 
 // ===== TELEGRAM =====
-
+String idFactoryReset="";
 String comandoPendiente = "";
 String chatPendiente = "";
 

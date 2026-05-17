@@ -4,44 +4,71 @@
 #include "telegram.h"
 #include "historial.h"
 #include "display.h"
+#include <nvs_flash.h>
+
 
 void resetWifi(){
 
+    static unsigned long refresh=0;
 
-  static unsigned long refresh = 0;
+    if(millis()-refresh<200) return;
+    refresh=millis();
 
-  if(millis() - refresh < 200) return;
-  refresh = millis();
+    unsigned long tiempo=millis()-tiempoPresionado;
+    int segundos=tiempo/1000;
 
-  unsigned long tiempo = millis() - tiempoPresionado;
-  int segundos = tiempo / 1000;
+    display.clearDisplay();
+    display.setCursor(0,5);
+    display.println("Mantener boton...");
+    display.setCursor(0,25);
+    display.print("Reset WiFi en: ");
 
-  display.clearDisplay();
-  display.setCursor(0,5);
-  display.println("Mantener boton...");
-  display.setCursor(0,25);
-  display.print("Reset wifi en: ");
+    int restante=5-segundos;
 
-  int restante = 5 - segundos;
-  if(restante < 0) restante = 0;
+    if(restante<0) restante=0;
 
-  display.print(restante);
-  display.println("s");
-  display.display();
+    display.print(restante);
+    display.println("s");
+    display.display();
 
-  if(tiempo >= 5000){
+   if(tiempo>=5000){
+
     mostrarTexto("Reseteando WiFi...");
 
-    if(WiFi.status() == WL_CONNECTED){
-      guardarEvento("Reset wifi por boton físico (LOCAL)");
-      enviarTelegram(CHAT_ID,"✔️ Reset WiFi Finalizado con exito!! - VUELVE A PROGRAMAR DESDE SU MOVIL CONECTANDO A RED: SolucionesIOT 🛜");
-      yield(); // para actualizar display antes de reiniciar
-       delay(2000); // pequeño delay para que el mensaje se alcance a mostrar 
+    guardarEvento("Reset WiFi boton");
+
+    if(WiFi.status()==WL_CONNECTED){
+
+        enviarTelegram(
+            CHAT_ID,
+            "📡 Reiniciando configuracion WiFi..."
+        );
+
+        yield();
+        delay(1000);
     }
-    
+
+    // limpia datos WiFiManager
     wm.resetSettings();
+
+    delay(300);
+
+    // limpia credenciales ESP32
+    WiFi.disconnect(true,true);
+
+    delay(1000);
+
+    WiFi.mode(WIFI_OFF);
+
+    delay(500);
+
+    Serial.println("✅ WiFi borrada");
+
+    botonActivo=false;
+    modoreset=false;
+
     ESP.restart();
-  }
+}
 }
 
 void apagarReleSeguro(int r){

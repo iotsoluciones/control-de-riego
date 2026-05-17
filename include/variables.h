@@ -106,6 +106,8 @@ extern int humedadSuelo;
 extern int humedadSueloLimite;
 
 // ===== TELEGRAM =====
+extern bool esperandoFactoryReset;
+extern String idFactoryReset;
 extern String colaMensajes[20];
 extern int totalMensajes;
 
