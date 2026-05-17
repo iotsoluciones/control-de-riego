@@ -60,6 +60,7 @@ menu += "🧹  /borrarnombres\n\n";
 menu += "      USUARIOS\n";
 menu += "👥  /usuarios\n";
 menu += "➕  /autorizar ID Nombre\n";
+menu += "➕  /nombreusuario ID Nombre\n";
 menu += "➖  /eliminar ID\n";
 menu += "➖  /salir\n\n";
 

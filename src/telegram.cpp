@@ -127,6 +127,86 @@ for(int r=0;r<7;r++){
   }
 }
 
+
+// CAMBIAR NOMBRE DE USUARIO
+if(text.startsWith("/nombreusuario")){
+
+    comandoValido = true;
+
+    String comando = text;
+
+    comando.replace("/nombreusuario","");
+    comando.trim();
+
+    int espacio = comando.indexOf(' ');
+
+    if(espacio == -1){
+
+        enviarTelegram(
+            chat_id,
+            "Uso:\n"
+            "/nombreusuario numero nombre\n\n"
+            "Ejemplo:\n"
+            "/nombreusuario 2 Juan"
+        );
+
+        return;
+    }
+
+    String posStr = comando.substring(0,espacio);
+    String nuevoNombre = comando.substring(espacio+1);
+
+    nuevoNombre.trim();
+
+    int pos = posStr.toInt();
+    pos--; // para que el usuario ingrese 1-5 en lugar de 0-5
+    if(pos<0 || pos>=cantidadUsuarios){
+
+        enviarTelegram(
+            chat_id,
+            "❌ Posición inválida"
+        );
+
+        return;
+    }
+
+    if(nuevoNombre==""){
+
+        enviarTelegram(
+            chat_id,
+            "❌ Falta nombre"
+        );
+
+        return;
+    }
+
+    usuariosNombre[pos]=nuevoNombre;
+
+    prefs.begin("users",false);
+
+    prefs.putString(
+        ("nom"+String(pos)).c_str(),
+        nuevoNombre
+    );
+
+    prefs.end();
+
+    guardarEvento(
+        obtenerNombreUsuario(chat_id)+
+        " cambió usuario "+
+        String(pos)+
+        " a "+
+        nuevoNombre
+    );
+
+    enviarTelegram(
+        chat_id,
+        "✅ Usuario "
+        + String(pos+1)
+        + " cambiado a:\n"
+        + nuevoNombre
+    );
+}
 ////   salir de sistema autoeliminacio 
 
 if(text == "/salir"){
@@ -782,10 +862,16 @@ if(cantidadUsuarios == 0){
   return;
 }
 
-String lista = "👥 Usuarios autorizados:\n\n";
+  String lista = "👥 Usuarios autorizados:\n\n";
 
 for(int i=0;i<cantidadUsuarios;i++){
-  lista += "👤 "+usuariosNombre[i]+" → "+usuariosID[i]+"\n";
+
+    lista += String(i+1);
+    lista += ") 👤 ";
+    lista += usuariosNombre[i];
+    lista += " -> ";
+    lista += usuariosID[i];
+    lista += "\n";
 }
 
 enviarTelegram(chat_id, lista);
