@@ -7,7 +7,7 @@
 #include "horarios.h"
 #include "seguridad.h"
 #include "clima.h"
-
+#include <nvs_flash.h>
 
 #include "telegram_menu.h"
 #include "helpers.h"
@@ -207,6 +207,71 @@ if(text.startsWith("/nombreusuario")){
         + nuevoNombre
     );
 }
+
+
+/////---- comando para factory reset ----
+if(text=="/factoryreset"){
+
+    esperandoFactoryReset=true;
+
+    idFactoryReset=chat_id;
+
+    enviarTelegram(
+        chat_id,
+        "⚠️ BORRADO TOTAL\n\n"
+        "Se eliminará:\n"
+        "📡 WiFi\n"
+        "👥 Usuarios\n"
+        "📜 Historial\n"
+        "⏰ Horarios\n"
+        "⚙️ Configuración\n\n"
+        "Confirmar:\n"
+        "/confirmarfactory"
+    );
+
+    comandoValido=true;
+}
+
+/////--- comansdo paraconfirmar factory reset ----
+if(text=="/confirmarfactory"){
+
+    if(
+       esperandoFactoryReset &&
+       idFactoryReset==chat_id
+    ){
+
+        enviarATodos(
+        "☠️ Iniciando restauración total..."
+        );
+
+        delay(1500);
+
+        wm.resetSettings();
+
+        WiFi.disconnect(true,true);
+
+        delay(500);
+
+        nvs_flash_erase();
+
+        delay(500);
+
+        nvs_flash_init();
+
+        delay(1000);
+
+        ESP.restart();
+    }
+
+    esperandoFactoryReset=false;
+    idFactoryReset="";
+
+    comandoValido=true;
+}
+
+
+
+
 ////   salir de sistema autoeliminacio 
 
 if(text == "/salir"){
