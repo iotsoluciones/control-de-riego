@@ -73,3 +73,36 @@ document.addEventListener('DOMContentLoaded', function() {
     // Actualizar cada 5 segundos
     setInterval(actualizarDatos, 5000);
 });
+
+/* <script>
+  // Clock
+  function tick() {
+    const now = new Date();
+    document.getElementById('clock').textContent = now.toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }
+  tick(); setInterval(tick, 1000);
+
+  // Simulate live sensor updates
+  setInterval(() => {
+    const t = (24 + Math.random()*2 - 1).toFixed(1);
+    const h = Math.round(58 + Math.random()*6 - 2);
+    document.getElementById('tempVal').innerHTML = `${t} <span class="sensor-unit">°C</span>`;
+    document.getElementById('humVal').innerHTML = `${h} <span class="sensor-unit">%</span>`;
+  }, 5000);
+
+  // Nav
+  function setNav(el) {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // Toast
+  let toastTimer;
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+  }
+</script>*/
