@@ -27,6 +27,8 @@ String eventos[MAX_EVENTOS];
 int indiceEvento = 0;
 
 // ===== TIMERS =====
+unsigned long tiempoComandoProtegido = 0;
+unsigned long tiempoAdmin = 0;
 unsigned long bloqueoEventosCriticos = 0;
 unsigned long timerCambioBomba = 0;
 unsigned long ultimoCambioBloqueo = 0;
@@ -49,6 +51,8 @@ unsigned long timerClock = 0;
 unsigned long timerSensor = 0;
 
 // ===== ESTADOS =====
+bool esperandoClave = false;
+bool adminTemporal = false;
 bool esperandoFactoryReset = false;
 bool OTAEnCurso = false;
 bool wifiAnterior = true;
@@ -99,6 +103,8 @@ int humedadSuelo = 0;
 int humedadSueloLimite = 60;
 
 // ===== TELEGRAM =====
+String comandoProtegidoPendiente = "";
+String claveAdmin = "1234";  // Clave para habilitar acceso admin temporal
 String idFactoryReset="";
 String comandoPendiente = "";
 String chatPendiente = "";

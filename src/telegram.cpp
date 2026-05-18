@@ -128,6 +128,8 @@ for(int r=0;r<7;r++){
 }
 
 
+
+
 // CAMBIAR NOMBRE DE USUARIO
 if(text.startsWith("/nombreusuario")){
 
@@ -209,6 +211,161 @@ if(text.startsWith("/nombreusuario")){
 }
 
 
+
+///-- cambio de clave desde telegram ----
+
+if(text.startsWith("/cambiarclave")){
+
+    if(!adminTemporal){
+
+        enviarTelegram(
+        chat_id,
+        "🔒 Requiere permisos\nUse: /clave (clave actual)");
+
+        hayComandoTelegram=false;
+        return;
+    }
+
+    String nueva = text;
+
+    nueva.replace("/cambiarclave","");
+
+    nueva.trim();
+
+    if(nueva==""){
+
+        enviarTelegram(
+        chat_id,
+        "❌ Falta nueva clave\nUse: /cambiarclave (nueva clave)");
+      
+
+        hayComandoTelegram=false;
+        return;
+    }
+
+    claveAdmin = nueva;
+
+    prefs.begin("config",false);
+
+    prefs.putString(
+        "clave",
+        claveAdmin
+    );
+
+    prefs.end();
+
+    Serial.print("Nueva clave: ");
+    Serial.println(claveAdmin);
+
+    enviarTelegram(
+        chat_id,
+        "✅ Clave modificada con éxito!!\n  Nueva clave: " + claveAdmin
+    );
+
+    hayComandoTelegram=false;
+    return;
+}
+
+//// habilitamos acceso admin
+if(text.startsWith("/clave")){
+
+    String pass=text;
+
+    pass.replace("/clave","");
+    pass.trim();
+
+    claveAdmin.trim();
+
+    if(pass==claveAdmin){
+
+        adminTemporal=true;
+        enviarTelegram(
+        chat_id,
+        "🔓 Acceso administrador autorizado por 30seg."
+        );
+        
+        tiempoAdmin=millis();
+
+        // ejecutar automáticamente
+        if(
+   esperandoClave &&
+   millis()-tiempoComandoProtegido<10000
+){
+
+    String ejecutar =
+    comandoProtegidoPendiente;
+
+    esperandoClave=false;
+
+    comandoProtegidoPendiente="";
+
+    text=ejecutar;
+
+    comandoValido=true;
+
+    Serial.println("COMANDO RECUPERADO:");
+    Serial.println(text);
+
+    enviarTelegram(
+    chat_id,
+    " 🔓 Acceso administrador autorizado\n ✅ Ejecutando: " + text
+    );
+
+}
+else{
+
+    esperandoClave=false;
+
+    comandoProtegidoPendiente="";
+
+    hayComandoTelegram=false;
+
+    return;
+}
+
+    }else{
+
+        enviarTelegram(
+        chat_id,
+        "❌ACCESO DENEGADO!! Clave incorrecta"
+        );
+
+        hayComandoTelegram=false;
+        return;
+    }
+}
+
+String txt = msg.text;
+// SOLO proteger comandos sensibles
+if(
+text=="/factoryreset" ||
+text=="/borrarhistorial" ||
+text=="/borrarhorarios" ||
+text=="/reiniciar" ||
+text.startsWith("/eliminar") ||
+text.startsWith("/borrarnombres")
+){
+
+    if(!adminTemporal){
+
+        comandoProtegidoPendiente=text;
+
+        esperandoClave=true;
+
+        tiempoComandoProtegido=millis();
+
+        enviarTelegram(
+        chat_id,
+        "🔒 Requiere clave\n"
+        "Tenés 10 segundos\n"
+        "Use: /clave XXXX"
+        );
+
+        hayComandoTelegram=false;
+        return;
+    }
+}
+
 /////---- comando para factory reset ----
 if(text=="/factoryreset"){
 
@@ -268,9 +425,6 @@ if(text=="/confirmarfactory"){
 
     comandoValido=true;
 }
-
-
-
 
 ////   salir de sistema autoeliminacio 
 
@@ -472,12 +626,12 @@ enviarTelegram(chat_id,
 if (text == "/borrarhistorial") {
 
   comandoValido = true;
-
+/* 
   if (!esAdmin(chat_id)) {
     enviarTelegram(chat_id, "⛔ Solo el admin puede borrar el historial");
     hayComandoTelegram=false;
     return;
-  }
+  } */
 
   enviarTelegram(chat_id,
   "⚠️ Confirmar borrado\nEscribí: /confirmarborrado");
@@ -927,15 +1081,31 @@ if(cantidadUsuarios == 0){
   return;
 }
 
-  String lista = "👥 Usuarios autorizados:\n\n";
+String lista = "👥 Usuarios autorizados:\n\n";
+
+// ADMIN PRIMERO
+lista += "1) 👑 ADMIN -> ";
+
+lista += obtenerNombreUsuario(CHAT_ID);
+
+lista += " -> ";
+
+lista += CHAT_ID;
+
+lista += "\n\n";
 
 for(int i=0;i<cantidadUsuarios;i++){
 
-    lista += String(i+1);
+    lista += String(i+2);
+
     lista += ") 👤 ";
+
     lista += usuariosNombre[i];
+
     lista += " -> ";
+
     lista += usuariosID[i];
+
     lista += "\n";
 }
 
@@ -944,13 +1114,6 @@ enviarTelegram(chat_id, lista);
 
 if(text.startsWith("/eliminar")){
 comandoValido = true;
-
-if(chat_id != CHAT_ID){
-  enviarTelegram(chat_id,"⛔ Solo admin");
-  hayComandoTelegram=false;
-  return;
-}
-
 char id[20];
 int ok = sscanf(text.c_str(), "/eliminar %s", id);
 
@@ -1484,6 +1647,12 @@ enviarTelegram(chat_id, msg);
 
 }
 
+}
+
+if(text.startsWith("/clave ")){
+
+    hayComandoTelegram=false;
+    return;
 }
 
 if(!comandoValido){

@@ -210,6 +210,28 @@ void loopSistema() {
         actualizarHora();
     }
 
+
+//////////--  conteto antes de expirar admin temporal -- //////////    
+    if(adminTemporal){
+
+    if(millis()-tiempoAdmin> 30000){   /// expira admin temporal cada 30 segundos
+        adminTemporal=false;
+        Serial.println("Admin expirado");
+    }
+}
+
+
+//// COMANDO PROTEGIDO PENDIENTE (ejemplo: cambio de clave)
+
+if(esperandoClave &&
+millis()-tiempoComandoProtegido>10000    /// si pasaron mas de 10 segundos, se cancela el comando protegido pendiente
+){
+    esperandoClave=false;
+    comandoProtegidoPendiente="";
+}
+
+
+
    
 ///-------LEEMOS DHT Y SENSOR DE SUELO CADA 5 SEGUNDOS-------///
 static unsigned long tSensores = 0;

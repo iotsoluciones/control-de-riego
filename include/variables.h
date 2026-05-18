@@ -35,8 +35,9 @@ extern String eventos[MAX_EVENTOS];
 extern int indiceEvento;
 
 // ===== TIMERS =====
+extern unsigned long tiempoComandoProtegido;
+extern unsigned long tiempoAdmin;
 extern unsigned long bloqueoEventosCriticos;
-extern bool estadoAnteriorBomba;
 extern unsigned long timerCambioBomba;
 extern unsigned long ultimoCambioBloqueo;
 extern unsigned long timerWiFi;
@@ -58,8 +59,11 @@ extern unsigned long timerClock;
 extern unsigned long timerSensor;
 
 // ===== ESTADOS =====
+extern bool esperandoClave;
+extern bool adminTemporal;
 extern bool OTAEnCurso;
 extern bool wifiAnterior;
+extern bool estadoAnteriorBomba;
 extern bool bombaEncendida;
 extern bool ultimoEstadoTanque;
 extern bool avisoInicioEnviado;
@@ -106,6 +110,7 @@ extern int humedadSuelo;
 extern int humedadSueloLimite;
 
 // ===== TELEGRAM =====
+extern String comandoProtegidoPendiente;
 extern bool esperandoFactoryReset;
 extern String idFactoryReset;
 extern String colaMensajes[20];
@@ -117,6 +122,7 @@ extern String BOTtoken;
 extern String CHAT_ID;
 
 // ===== USUARIOS =====
+extern String claveAdmin;
 
 extern String usuarios[MAX_USERS];
 

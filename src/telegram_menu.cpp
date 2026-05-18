@@ -51,7 +51,6 @@ menu += "⛔  /deshabilitar N\n";
 menu += "🟢  /habilitartodos\n";
 menu += "🔴  /deshabilitartodos\n\n";
 
-
 menu += "      USUARIOS\n";
 menu += "👥  /usuarios\n";
 menu += "➕  /autorizar ID Nombre\n";
@@ -59,9 +58,10 @@ menu += "➕  /nombreusuario ID Nombre\n";
 menu += "➖  /salir\n\n";
 
 menu += "      CONFIGURACIÓN\n";
-menu += "❌  /borrarhistorial - Elimina historial.\n";
-menu += "➖  /eliminar ID - Elimina usuario.\n";
+menu += "🔐  /cambiarclave - Clave acceso.\n";
 menu += "🔄  /reiniciar - Reinicia el sistema.\n";
+menu += "➖  /eliminar ID - Elimina usuario.\n";
+menu += "🧹  /borrarhistorial - Elimina historial.\n";
 menu += "🧹  /borrarnombres - Borra todos los nombres.\n";
 menu += "🧹  /borrarhorarios - Borrar todos los horarios.\n";
 menu += "⛔  /factoryreset - ATENCION! borrar todos los datos almacenados en el sistema, vuevle reset de fabrica\n\n";
