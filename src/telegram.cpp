@@ -121,12 +121,17 @@ if(!usuarioAutorizado(chat_id)){
 
 // convertir nombre de rele en comando 
 for(int r=0;r<7;r++){
-  if(text == reles[r].nombre){
-    text="/rele"+String(r+1);
-    comandoValido = true;
-  }
-}
 
+    if(
+        text == reles[r].nombre ||
+        text == (String("⚡ ") + reles[r].nombre)
+    ){
+
+        text="/rele"+String(r+1);
+
+        comandoValido=true;
+    }
+}
 
 
 
@@ -161,14 +166,14 @@ if(text.startsWith("/nombreusuario")){
     nuevoNombre.trim();
 
     int pos = posStr.toInt();
-    pos--; // para que el usuario ingrese 1-5 en lugar de 0-5
+    pos-=2; // para que el usuario ingrese 1-5 en lugar de 0-4
     if(pos<0 || pos>=cantidadUsuarios){
 
         enviarTelegram(
             chat_id,
             "❌ Posición inválida"
         );
-
+        hayComandoTelegram=false;
         return;
     }
 
@@ -178,7 +183,7 @@ if(text.startsWith("/nombreusuario")){
             chat_id,
             "❌ Falta nombre"
         );
-
+        hayComandoTelegram=false;
         return;
     }
 
@@ -196,7 +201,7 @@ if(text.startsWith("/nombreusuario")){
     guardarEvento(
         obtenerNombreUsuario(chat_id)+
         " cambió usuario "+
-        String(pos)+
+        String(pos+2)+
         " a "+
         nuevoNombre
     );
@@ -204,7 +209,7 @@ if(text.startsWith("/nombreusuario")){
     enviarTelegram(
         chat_id,
         "✅ Usuario "
-        + String(pos+1)
+        + String(pos+2)
         + " cambiado a:\n"
         + nuevoNombre
     );
@@ -342,7 +347,7 @@ text=="/factoryreset" ||
 text=="/borrarhistorial" ||
 text=="/borrarhorarios" ||
 text=="/reiniciar" ||
-text.startsWith("/eliminar") ||
+text.startsWith("/eliminarusuario") ||
 text.startsWith("/borrarnombres")
 ){
 
@@ -423,12 +428,12 @@ if(text=="/confirmarfactory"){
     esperandoFactoryReset=false;
     idFactoryReset="";
 
-    comandoValido=true;
+  
 }
 
 ////   salir de sistema autoeliminacio 
 
-if(text == "/salir"){
+if(text == "/salir" || text == "🚷 salir"){
 
     esperandoConfirmacionSalir = true;
     idSalirPendiente = chat_id;
@@ -440,7 +445,7 @@ if(text == "/salir"){
         "/confirmarsalir"
     );
 
-    comandoValido = true;
+    hayComandoTelegram = false;
 }
 
 
@@ -454,8 +459,9 @@ if(text == "/confirmarsalir"){
     enviarTelegram(
         chat_id,
         "⛔ El administrador principal no puede eliminarse."
+  
     );
-
+      hayComandoTelegram = false;
     return;
      } 
 
@@ -463,26 +469,27 @@ if(text == "/confirmarsalir"){
 
             if(String(usuariosID[i]) == chat_id){
 
-                for(int j=i;j<cantidadUsuarios-1;j++){
+                for(int j=i;j<cantidadUsuarios-1;j++){   /// desplazo usuarios para eliminar el que sale
                     usuariosID[j] = usuariosID[j+1];
+                    usuariosNombre[j] = usuariosNombre[j+1];
                 }
 
                 cantidadUsuarios--;
-
+                usuariosID[cantidadUsuarios] = "";
+                usuariosNombre[cantidadUsuarios] = "";
                 guardarUsuarios();
 
                 enviarTelegram(
                     chat_id,
                     "❌ Tu ID fue eliminado del sistema.\n"
                     "Ya no tenés acceso."
-                );
+                     );
 
                 enviarTelegram(
                     CHAT_ID,
                     "⚠️ Un usuario se eliminó del sistema:\n" +
                     chat_id
-                );
-
+                    );
                 break;
             }
         }
@@ -662,7 +669,7 @@ if(text=="/menu" || text=="📋 Menu"){
     comandoValido = true;
 }
 
-if(text=="/menurapido" || text=="⚡ Menurapido"){
+if(text=="/menurapido" || text=="💥 Menurapido"){
 enviarMenuRapido(chat_id);
 comandoValido = true;
 }
@@ -954,7 +961,7 @@ for(int r=0;r<8;r++){
     if(reles[7].encendido)
       mensaje+="🟢 ON\n";
     else
-      mensaje+="⚪ OFF\n";
+      mensaje+="🔴 OFF\n";
 
     mensaje+="Modo: ⚙️ AUTOMATICO (Por valvulas activas)\n\n";
 
@@ -970,19 +977,19 @@ for(int r=0;r<8;r++){
     if(reles[r].encendido)
       mensaje+="🟢 ON\n";
     else
-      mensaje+="⚪ OFF\n";
+      mensaje+="🔴 OFF\n";
 
     mensaje+="Control: ";
 
     if(modoTanqueAutomatico){
       // SIEMPRE HABILITADO EN AUTOMATICO
-      mensaje+="🟢 AUTOMATICO (Flotante)\n";
+      mensaje+="☑️ AUTOMATICO (Flotante)\n";
     }else{
       //  comportamiento normal
       if(reles[r].habilitado)
-        mensaje+="🟢 HABILITADO\n";
+        mensaje+="☑️ HABILITADO\n";
       else
-        mensaje+="🔴 DESHABILITADO\n";
+        mensaje+="🚫 DESHABILITADO\n";
     }
 
     mensaje+="\n";
@@ -996,13 +1003,13 @@ for(int r=0;r<8;r++){
   if(reles[r].encendido)
     mensaje+="🟢 ON\n";
   else
-    mensaje+="⚪ OFF\n";
+    mensaje+="🔴 OFF\n";
 
   mensaje+="Control: ";
   if(reles[r].habilitado)
-    mensaje+="🟢 HABILITADO\n";
+    mensaje+="☑️ HABILITADO\n";
   else
-    mensaje+="🔴 DESHABILITADO\n";
+    mensaje+="🚫 DESHABILITADO\n";
 
   mensaje+="\n";
 }
@@ -1068,7 +1075,7 @@ enviarTelegram(chat_id,"⚠️ Uso:\n/autorizar ID Nombre");
 
 }
 
-if(text=="/usuarios"){
+if(text=="/usuarios" || text=="👥 usuarios"){
 comandoValido = true;
 
 if(cantidadUsuarios == 0){
@@ -1084,7 +1091,7 @@ if(cantidadUsuarios == 0){
 String lista = "👥 Usuarios autorizados:\n\n";
 
 // ADMIN PRIMERO
-lista += "1) 👑 ADMIN -> ";
+lista += "1) 👑 ";
 
 lista += obtenerNombreUsuario(CHAT_ID);
 
@@ -1092,7 +1099,7 @@ lista += " -> ";
 
 lista += CHAT_ID;
 
-lista += "\n\n";
+lista += "\n";
 
 for(int i=0;i<cantidadUsuarios;i++){
 
@@ -1112,10 +1119,10 @@ for(int i=0;i<cantidadUsuarios;i++){
 enviarTelegram(chat_id, lista);
 }
 
-if(text.startsWith("/eliminar")){
+if(text.startsWith("/eliminarusuario")){
 comandoValido = true;
 char id[20];
-int ok = sscanf(text.c_str(), "/eliminar %s", id);
+int ok = sscanf(text.c_str(), "/eliminarusuario %s", id);
 
 if(ok == 1){
 
@@ -1278,12 +1285,11 @@ enviarTelegram(chat_id,"⛔ Nuevo limite humedad: "+String(valor)+"%");
 }else{
 
 enviarTelegram(chat_id,"⚠️ Uso correcto: /humedad 1 a 100");
-
+}
 }
 
-}
 
-if(text=="/historial"){
+if(text=="/historial" || text=="📜 historial"){
   comandoValido = true;
 
   String msg = "📜 *HISTORIAL DE EVENTOS*\n";

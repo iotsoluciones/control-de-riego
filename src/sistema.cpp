@@ -77,8 +77,8 @@ void iniciarSistema() {
     WiFi.setTxPower(WIFI_POWER_19_5dBm);
 
     clientTelegram.setInsecure();
-    clientTelegram.setTimeout(1000);
-    myBot.setUpdateTime(500);
+    clientTelegram.setTimeout(300);
+    myBot.setUpdateTime(200);
     myBot.setTelegramToken(BOTtoken.c_str());
     myBot.begin();
     delay(50);

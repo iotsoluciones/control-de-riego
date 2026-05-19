@@ -280,4 +280,4 @@
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-spi.h \
  .pio/libdeps/esp32dev/Adafruit\ SSD1306/Adafruit_SSD1306.h \
  C:/Users/javit/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src/ArduinoOTA.h \
- include/telegram.h
+ include/telegram.h include/usuarios.h include/historial.h

@@ -4,7 +4,8 @@
 #include "web_server.h"
 #include "variables.h"
 #include "telegram.h"
-
+#include "usuarios.h"
+#include "historial.h"
 
 
 WebServer server(80);
@@ -103,9 +104,9 @@ ElegantOTA.begin(&server);
 ElegantOTA.onStart([]() {
 
     OTAEnCurso = true;
-
-    Serial.println("📡 OTA iniciada");
-    enviarATodos("🔄 Actualización OTA iniciada");
+    String nombre = obtenerNombreUsuario(chat_id);
+    guardarEvento("🚀 Nueva Actualización OTA!");  // almaceno accion y nombre en histrial
+    enviarATodos("🔄 Actualización OTA iniciada...");
 });
 
 
@@ -115,12 +116,9 @@ ElegantOTA.onEnd([](bool success) {
     OTAEnCurso = false;
 
     if(success){
-
-        Serial.println("✅ OTA completada correctamente");
-
+    
         enviarATodos(
-            "✅ OTA finalizada correctamente\n"
-            "🚀 Sistema actualizado"
+            "🚀 Sistema actualizado!!"
         );
     }
     else{

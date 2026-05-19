@@ -13,7 +13,7 @@ menu += "       ━━━━━━━━━━━━━━━━━━\n\n";
 
 menu += "      SISTEMA\n";
 menu += "📋  /menu\n";
-menu += "⚡  /menurapido\n";
+menu += "💥  /menurapido\n";
 menu += "🔍  /historial\n\n";
 
 menu += "      ESTADO Y DATOS\n";
@@ -55,12 +55,12 @@ menu += "      USUARIOS\n";
 menu += "👥  /usuarios\n";
 menu += "➕  /autorizar ID Nombre\n";
 menu += "➕  /nombreusuario ID Nombre\n";
-menu += "➖  /salir\n\n";
+menu += "🚷  /salir\n\n";
 
-menu += "      CONFIGURACIÓN\n";
+menu += "      CONFIGURACIÓN (⚠️Requiere clave)\n";
 menu += "🔐  /cambiarclave - Clave acceso.\n";
 menu += "🔄  /reiniciar - Reinicia el sistema.\n";
-menu += "➖  /eliminar ID - Elimina usuario.\n";
+menu += "➖  /eliminarusuario ID - Elimina usuario.\n";
 menu += "🧹  /borrarhistorial - Elimina historial.\n";
 menu += "🧹  /borrarnombres - Borra todos los nombres.\n";
 menu += "🧹  /borrarhorarios - Borrar todos los horarios.\n";
@@ -77,26 +77,53 @@ void enviarPanelReles(String chat_id){
 
 ReplyKeyboard teclado;
 
-teclado.addRow();
-teclado.addButton(reles[0].nombre.c_str());
-teclado.addButton(reles[1].nombre.c_str());
-
-teclado.addRow();
-teclado.addButton(reles[2].nombre.c_str());
-teclado.addButton(reles[3].nombre.c_str());
-
-teclado.addRow();
-teclado.addButton(reles[4].nombre.c_str());
-teclado.addButton(reles[5].nombre.c_str());
-
-teclado.addRow();
-teclado.addButton("⚡ Menurapido");
 
 if(!modoTanqueAutomatico){
-    
-    teclado.addButton(reles[6].nombre.c_str());
+teclado.addRow();
+teclado.addButton((String("⚡ ") + reles[0].nombre).c_str());
+teclado.addButton((String("⚡ ") + reles[1].nombre).c_str());
 
-}
+teclado.addRow();
+
+teclado.addButton((String("⚡ ") + reles[2].nombre).c_str());
+teclado.addButton((String("⚡ ") + reles[3].nombre).c_str());
+
+teclado.addRow();
+
+teclado.addButton((String("⚡ ") + reles[4].nombre).c_str());
+teclado.addButton((String("⚡ ") + reles[5].nombre).c_str());
+
+teclado.addRow();
+
+teclado.addButton((String("⚡ ") + reles[6].nombre).c_str());
+
+teclado.addButton("⛔ Todo OFF");
+
+teclado.addRow();
+
+teclado.addButton("💥 Menurapido");
+
+}else{
+
+teclado.addRow();
+teclado.addButton((String("⚡ ") + reles[0].nombre).c_str());
+teclado.addButton((String("⚡ ") + reles[1].nombre).c_str());
+
+teclado.addRow();
+
+teclado.addButton((String("⚡ ") + reles[2].nombre).c_str());
+teclado.addButton((String("⚡ ") + reles[3].nombre).c_str());
+
+teclado.addRow();
+
+teclado.addButton((String("⚡ ") + reles[4].nombre).c_str());
+teclado.addButton((String("⚡ ") + reles[5].nombre).c_str());
+
+teclado.addRow();
+
+teclado.addButton("⛔ Todo OFF");
+teclado.addButton("💥 Menurapido");
+}    
 
 teclado.enableResize();
 
@@ -107,7 +134,7 @@ msg.chatId = atoll(chat_id.c_str());
 
 myBot.sendMessage(
     msg,
-    "🎛 PANEL DE CONTROL",
+    "🎛 CONTROL DE RELE",
     teclado
 );
 }
@@ -121,7 +148,6 @@ teclado.addRow();
 teclado.addButton("📋 Menu");
 teclado.addButton("🎛 Panel");
 
-
 teclado.addRow();
 
 teclado.addButton("📊 Estado");
@@ -129,13 +155,18 @@ teclado.addButton("🌡 Sensores");
 
 teclado.addRow();
 
-teclado.addButton("⛔ Todo OFF");
 teclado.addButton("📅 Horarios");
+teclado.addButton("📜 historial");
 
 teclado.addRow();
 
 teclado.addButton("🚰 Tanque SI");
 teclado.addButton("🚫 Tanque NO");
+
+teclado.addRow();
+
+teclado.addButton("👥 usuarios");
+teclado.addButton("🚷 salir");
 
 teclado.enableResize();
 
