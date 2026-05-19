@@ -74,7 +74,9 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(actualizarDatos, 5000);
 });
 
-/* <script>
+
+//Prueba de fuenciones en la web
+
   // Clock
   function tick() {
     const now = new Date();
@@ -105,4 +107,3 @@ document.addEventListener('DOMContentLoaded', function() {
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
   }
-</script>*/
