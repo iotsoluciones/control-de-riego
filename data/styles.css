@@ -82,7 +82,7 @@ main {
 }
 
 .page-title {
-  font-family: var(--mono); font-size: 20px; font-weight: 700;
+  font-family: var(--mono); font-size: 30px; font-weight: 700; 
   letter-spacing: 1px;
   display: flex; align-items: center; gap: 10px;
 }
