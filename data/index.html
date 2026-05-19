@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🌱 Sistema de Riego IOT</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="esp32.css">
-<link rel="stylesheet" href="overrides.css">
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartGrow — ESP32 IoT Manager v0.1</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .btn-danger-ghost {
+      color: #f85149;
+      border-color: rgba(248, 81, 73, 0.25);
+    }
+  </style>
 </head>
 <body>
 
-<!-- HEADER -->
+<!-- ── HEADER ── -->
 <header>
   <div class="brand">
     <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -22,235 +25,214 @@
       <path d="M6 21 Q14 14 22 21" stroke="#3fb950" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-dasharray="2 2"/>
     </svg>
     <div>
-      <div class="brand-name">IOT-SOLUCIONES</div>
+      <div class="brand-name">SMARTGROW</div>
       <div class="brand-sub">ESP32 DATA &amp; CONTROL</div>
     </div>
+  </div>
   <div class="header-right">
     <button class="btn-ghost">
       <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-5 6s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3z"/></svg>
       USER PROFILE
     </button>
-    <button class="btn-ghost btn-logout" onclick="toast('Sesión cerrada')">
+    <button type="button" class="btn-ghost btn-danger-ghost" onclick="toast('Sesión cerrada')">
       <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"/><path d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/></svg>
       LOGOUT
     </button>
   </div>
   </div>
+
 </header>
 
 <div class="app">
 
-<!-- SIDEBAR -->
-<nav>
-  <button class="nav-item active" onclick="setNav(this)">
-    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 4a.5.5 0 0 1 .5.5V6a.5.5 0 0 1-1 0V4.5A.5.5 0 0 1 8 4zM3.732 5.732a.5.5 0 0 1 .707 0l.915.914a.5.5 0 1 1-.708.708l-.914-.915a.5.5 0 0 1 0-.707zM2 10a.5.5 0 0 1 .5-.5h1.586a.5.5 0 0 1 0 1H2.5A.5.5 0 0 1 2 10zm9.5 0a.5.5 0 0 1 .5-.5h1.5a.5.5 0 0 1 0 1H12a.5.5 0 0 1-.5-.5zm.754-4.246a.389.389 0 0 0-.527-.02L9.893 8.84a2.508 2.508 0 0 1 .304 1.545l3.218-3.218c.395-.394.394-1.037-.161-1.333z"/><path fill-rule="evenodd" d="M5 10a3 3 0 1 1 6 0 3 3 0 0 1-6 0"/></svg>
-    DASHBOARD
-  </button>
-  <button class="nav-item" onclick="setNav(this)">
-    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M11.596 8.697l-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>
-    SENSORS
-  </button>
-  <button class="nav-item" onclick="setNav(this)">
-    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 16a6 6 0 0 0 6-6c0-1.655-.354-2.927-1.007-3.993C11.661 4.845 10.51 3.94 9 3.223V1.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.723C5.49 3.94 4.339 4.844 3.007 6.007 2.354 7.073 2 8.345 2 10a6 6 0 0 0 6 6zm0-1a5 5 0 1 1 0-10A5 5 0 0 1 8 15z"/></svg>
-    IRRIGATION
-  </button>
-  <button class="nav-item" onclick="setNav(this)">
-    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z"/></svg>
-    COMMANDS
-  </button>
-  <button class="nav-item" onclick="setNav(this)">
-    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M5 4a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5zm-.5 2.5A.5.5 0 0 1 5 6h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zM5 8a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5zm0 2a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1H5z"/><path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2zm10-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1z"/></svg>
-    LOGS
-  </button>
-  <button class="nav-item nav-bottom" onclick="setNav(this)">
-    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/></svg>
-    SETTINGS
-  </button>
-</nav>
+  <!-- ── SIDEBAR ── -->
+  <nav>
+    <button class="nav-item active" onclick="setNav(this)">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 4a.5.5 0 0 1 .5.5V6a.5.5 0 0 1-1 0V4.5A.5.5 0 0 1 8 4zM3.732 5.732a.5.5 0 0 1 .707 0l.915.914a.5.5 0 1 1-.708.708l-.914-.915a.5.5 0 0 1 0-.707zM2 10a.5.5 0 0 1 .5-.5h1.586a.5.5 0 0 1 0 1H2.5A.5.5 0 0 1 2 10zm9.5 0a.5.5 0 0 1 .5-.5h1.5a.5.5 0 0 1 0 1H12a.5.5 0 0 1-.5-.5zm.754-4.246a.389.389 0 0 0-.527-.02L9.893 8.84a2.508 2.508 0 0 1 .304 1.545l3.218-3.218c.395-.394.394-1.037-.161-1.333z"/><path fill-rule="evenodd" d="M5 10a3 3 0 1 1 6 0 3 3 0 0 1-6 0"/></svg>
+      DASHBOARD
+    </button>
+    <button class="nav-item" onclick="setNav(this)">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M11.596 8.697l-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>
+      SENSORS
+    </button>
+    <button class="nav-item" onclick="setNav(this)">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 16a6 6 0 0 0 6-6c0-1.655-.354-2.927-1.007-3.993C11.661 4.845 10.51 3.94 9 3.223V1.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.723C5.49 3.94 4.339 4.844 3.007 6.007 2.354 7.073 2 8.345 2 10a6 6 0 0 0 6 6zm0-1a5 5 0 1 1 0-10A5 5 0 0 1 8 15z"/></svg>
+      IRRIGATION
+    </button>
+    <button class="nav-item" onclick="setNav(this)">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z"/></svg>
+      COMMANDS
+    </button>
+    <button class="nav-item" onclick="setNav(this)">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M5 4a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5zm-.5 2.5A.5.5 0 0 1 5 6h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zM5 8a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5zm0 2a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1H5z"/><path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2zm10-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1z"/></svg>
+      LOGS
+    </button>
+    <button class="nav-item" onclick="setNav(this)" style="margin-top:auto">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/></svg>
+      SETTINGS
+    </button>
+  </nav>
 
-<!-- MAIN -->
-<main>
-  <div class="page-header">
-    <div class="page-title">
-    🌱 Sistema de Riego IOT <span class="badge badge-blue">v0.1</span>
-    </div>
-    <div class="live-status">
-      <div class="dot pulse"> </div> LIVE <span id="clock"></span>
-    </div>
-  </div>
+  <!-- ── MAIN ── -->
+  <main>
 
-  <!-- ROW 1: SENSORS -->
-  <div class="grid-2">
-    <!-- TEMPERATURE -->
+    <!-- Título + reloj -->
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="page-title">
+        DASHBOARD
+        <span class="badge badge-blue">v0.1</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--muted)">
+        <div class="dot pulse"></div>
+        LIVE · <span id="clock"></span>
+      </div>
+    </div>
+
+    <!-- ROW 1: SENSORES -->
+    <div class="grid-2">
+
+      <!-- TEMPERATURA -->
+      <div class="card">
+        <div class="card-title">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 14a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm0-9a1 1 0 0 1 1 1v3.517a2.5 2.5 0 1 1-2 0V6a1 1 0 0 1 1-1z"/></svg>
+          TEMPERATURE
+          <span class="badge badge-blue" style="margin-left:auto">LAST 24H</span>
+        </div>
+        <div class="sensor-value" id="tempVal">24.5 <span class="sensor-unit">°C</span></div>
+        <div class="sensor-label">ESP32 ANALOG SENSOR · ADC1</div>
+        <svg class="sparkline" viewBox="0 0 200 52" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="tg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#58a6ff" stop-opacity=".3"/>
+              <stop offset="100%" stop-color="#58a6ff" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M0 35 L20 28 L40 32 L60 22 L80 26 L100 18 L120 24 L140 14 L160 20 L180 16 L200 22" fill="none" stroke="#58a6ff" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+          <path d="M0 35 L20 28 L40 32 L60 22 L80 26 L100 18 L120 24 L140 14 L160 20 L180 16 L200 22 L200 52 L0 52 Z" fill="url(#tg)"/>
+        </svg>
+      </div>
+
+      <!-- HUMEDAD -->
+      <div class="card">
+        <div class="card-title">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 16a5 5 0 0 0 5-5c0-2.762-5-11-5-11S3 8.238 3 11a5 5 0 0 0 5 5z"/></svg>
+          HUMIDITY
+          <span class="badge badge-blue" style="margin-left:auto">LAST 24H</span>
+        </div>
+        <div class="sensor-value" id="humVal">60 <span class="sensor-unit">%</span></div>
+        <div class="sensor-label">DHT22 SENSOR · GPIO 4</div>
+        <svg class="sparkline" viewBox="0 0 200 52" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="hg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#3fb950" stop-opacity=".3"/>
+              <stop offset="100%" stop-color="#3fb950" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M0 30 L20 26 L40 34 L60 28 L80 38 L100 22 L120 30 L140 18 L160 28 L180 22 L200 26" fill="none" stroke="#3fb950" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+          <path d="M0 30 L20 26 L40 34 L60 28 L80 38 L100 22 L120 30 L140 18 L160 28 L180 22 L200 26 L200 52 L0 52 Z" fill="url(#hg)"/>
+        </svg>
+      </div>
+
+    </div>
+
+    <!-- ROW 2: IRRIGACIÓN + SYSTEM STATUS -->
+    <div class="grid-3">
+
+      <!-- IRRIGATION SCHEDULES -->
+      <div class="card">
+        <div class="card-title">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 16a5 5 0 0 0 5-5c0-2.762-5-11-5-11S3 8.238 3 11a5 5 0 0 0 5 5z"/></svg>
+          IRRIGATION SCHEDULES
+        </div>
+        <!-- Formulario para agregar zona -->
+        <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
+          <input id="newZone" type="number" placeholder="N° de zona" min="1" class="form-input" style="width:130px;">
+          <input id="newTime" type="time" class="form-input" title="Start time" aria-label="Start time">
+          <input id="newDuration" type="number" placeholder="Duración (min)" min="1" class="form-input" style="width:150px;">
+          <button class="btn-ghost" style="font-size:11px;padding:8px 14px;" onclick="addZone()">+ ADD ZONE</button>
+        </div>
+        <!-- Tabla de zonas -->
+        <table>
+          <thead>
+            <tr>
+              <th>ZONE</th><th>START TIME</th><th>DURATION</th><th>ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody id="zonesBody"></tbody>
+        </table>
+      </div>
+
+      <!-- SYSTEM STATUS -->
+      <div class="card">
+        <div class="card-title">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M11 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h6zM5 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H5z"/><path d="M8 14a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/></svg>
+          SYSTEM STATUS
+        </div>
+        <div class="status-row">
+          <span class="status-key">DEVICE</span>
+          <span class="chip chip-green">● ONLINE</span>
+        </div>
+        <div class="status-row">
+          <span class="status-key">LAST SYNC</span>
+          <span style="font-family:var(--mono);font-size:12px;color:var(--muted)">1 min ago</span>
+        </div>
+        <div class="status-row">
+          <span class="status-key">BATTERY</span>
+          <span class="chip chip-green">85%</span>
+        </div>
+        <div class="status-row">
+          <span class="status-key">UPTIME</span>
+          <span style="font-family:var(--mono);font-size:12px;color:var(--muted)">4d 12h 30m</span>
+        </div>
+        <div class="esp32-icon" style="width:100%;border-radius:8px;font-size:12px;padding:10px;gap:8px;flex-direction:column;height:auto;margin-top:14px">
+          <div style="font-size:9px;letter-spacing:2px;color:var(--muted)">MICROCONTROLLER</div>
+          <div style="color:var(--accent);font-weight:700;letter-spacing:3px">ESP32</div>
+          <div style="font-size:9px;color:var(--muted)">240 MHz · 520KB SRAM</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ROW 3: COMMANDS -->
     <div class="card">
       <div class="card-title">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 14a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm0-9a1 1 0 0 1 1 1v3.517a2.5 2.5 0 1 1-2 0V6a1 1 0 0 1 1-1z"/></svg>
-        TEMPERATURE
-        <span class="badge badge-blue badge-right">LAST 24H</span>
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M0 3a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3zm9.5 5.5h-3a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1zm-6.354-.354a.5.5 0 1 0 .708.708l2-2a.5.5 0 0 0 0-.708l-2-2a.5.5 0 1 0-.708.708L4.793 6.5 3.146 8.146z"/></svg>
+        COMMANDS &amp; ACTIONS
       </div>
-      <div class="sensor-value" id="tempVal">24.5 <span class="sensor-unit">°C</span></div>
-      <div class="sensor-label">ESP32 ANALOG SENSOR · ADC1</div>
-      <svg class="sparkline" viewBox="0 0 200 52" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="tg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#58a6ff" stop-opacity=".3"/>
-            <stop offset="100%" stop-color="#58a6ff" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
-        <path d="M0 35 L20 28 L40 32 L60 22 L80 26 L100 18 L120 24 L140 14 L160 20 L180 16 L200 22" fill="none" stroke="#58a6ff" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
-        <path d="M0 35 L20 28 L40 32 L60 22 L80 26 L100 18 L120 24 L140 14 L160 20 L180 16 L200 22 L200 52 L0 52 Z" fill="url(#tg)"/>
-      </svg>
+      <div class="commands-grid">
+        <button class="cmd-btn" onclick="toast('Irrigación manual Zona 1 activada')">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 16a5 5 0 0 0 5-5c0-2.762-5-11-5-11S3 8.238 3 11a5 5 0 0 0 5 5z"/></svg>
+          MANUAL IRRIGATION (ZONE 1)
+        </button>
+        <button class="cmd-btn" onclick="toast('Actualización de firmware iniciada')">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z"/></svg>
+          UPDATE ESP32 FIRMWARE
+        </button>
+        <button class="cmd-btn" onclick="toast('Irrigación manual Zona 2 activada')">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 16a5 5 0 0 0 5-5c0-2.762-5-11-5-11S3 8.238 3 11a5 5 0 0 0 5 5z"/></svg>
+          MANUAL IRRIGATION (ZONE 2)
+        </button>
+        <button class="cmd-btn danger" onclick="if(confirm('¿Confirmar reinicio del sistema?')) toast('Sistema reiniciando...')">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/><path fill-rule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"/></svg>
+          SYSTEM RESET
+        </button>
+        <div class="toggle-row" style="grid-column:1/2">
+          <span id="ledLabel" class="toggle-label">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm0 1a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8z"/></svg>
+            LED INDICATOR
+          </span>
+          <label class="toggle">
+            <input id="ledToggle" type="checkbox" checked aria-labelledby="ledLabel" onchange="toast(this.checked ? 'LED activado' : 'LED desactivado')">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
     </div>
 
-    <!-- HUMIDITY -->
-    <div class="card">
-      <div class="card-title">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 16a5 5 0 0 0 5-5c0-2.762-5-11-5-11S3 8.238 3 11a5 5 0 0 0 5 5z"/></svg>
-        HUMIDITY
-        <span class="badge badge-blue badge-right">LAST 24H</span>
-      </div>
-      <div class="sensor-value" id="humVal">60 <span class="sensor-unit">%</span></div>
-      <div class="sensor-label">DHT22 SENSOR · GPIO 4</div>
-      <svg class="sparkline" viewBox="0 0 200 52" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="hg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#3fb950" stop-opacity=".3"/>
-            <stop offset="100%" stop-color="#3fb950" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
-        <path d="M0 30 L20 26 L40 34 L60 28 L80 38 L100 22 L120 30 L140 18 L160 28 L180 22 L200 26" fill="none" stroke="#3fb950" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
-        <path d="M0 30 L20 26 L40 34 L60 28 L80 38 L100 22 L120 30 L140 18 L160 28 L180 22 L200 26 L200 52 L0 52 Z" fill="url(#hg)"/>
-      </svg>
-    </div>
-  </div>
-
-  <!-- ROW 2: IRRIGATION + SYSTEM STATUS -->
-  <div class="grid-3">
-    <!-- IRRIGATION SCHEDULES -->
-    <div class="card">
-      <div class="card-title">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 16a5 5 0 0 0 5-5c0-2.762-5-11-5-11S3 8.238 3 11a5 5 0 0 0 5 5z"/></svg>
-        IRRIGATION SCHEDULES
-        <button class="btn-ghost add-zone" onclick="toast('Nueva zona agregada')">+ ADD ZONE</button>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>ZONE</th><th>START TIME</th><th>DURATION</th><th>DAYS</th><th>ACTIONS</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><span class="zone-badge z1">ZONE 1</span></td>
-            <td class="mono-small">09:00 AM</td>
-            <td class="mono-small">5 min</td>
-            <td><span class="badge badge-blue">D</span></td>
-            <td><div class="action-btns">
-              <button class="icon-btn" title="Run" onclick="toast('Zona 1 activada')">▶</button>
-              <button class="icon-btn" title="Edit" onclick="toast('Editando zona 1')">✎</button>
-              <button class="icon-btn danger" title="Delete" onclick="toast('Zona 1 eliminada')">✕</button>
-            </div></td>
-          </tr>
-          <tr>
-            <td><span class="zone-badge z2">ZONE 2</span></td>
-            <td class="mono-small">12:00 AM</td>
-            <td class="mono-small">5 min</td>
-            <td><span class="badge badge-green">H, ID</span></td>
-            <td><div class="action-btns">
-              <button class="icon-btn" title="Run" onclick="toast('Zona 2 activada')">▶</button>
-              <button class="icon-btn" title="Edit" onclick="toast('Editando zona 2')">✎</button>
-              <button class="icon-btn danger" title="Delete" onclick="toast('Zona 2 eliminada')">✕</button>
-            </div></td>
-          </tr>
-          <tr>
-            <td><span class="zone-badge z3">ZONE 3</span></td>
-            <td class="mono-small">12:00 AM</td>
-            <td class="mono-small">5 min</td>
-            <td><span class="badge badge-orange">D</span></td>
-            <td><div class="action-btns">
-              <button class="icon-btn" title="Run" onclick="toast('Zona 3 activada')">▶</button>
-              <button class="icon-btn" title="Edit" onclick="toast('Editando zona 3')">✎</button>
-              <button class="icon-btn danger" title="Delete" onclick="toast('Zona 3 eliminada')">✕</button>
-            </div></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- SYSTEM STATUS -->
-    <div class="card">
-      <div class="card-title">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M11 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h6zM5 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H5z"/><path d="M8 14a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/></svg>
-        SYSTEM STATUS
-      </div>
-      <div class="status-row">
-        <span class="status-key">DEVICE</span>
-        <span class="chip chip-green">● ONLINE</span>
-      </div>
-      <div class="status-row">
-        <span class="status-key">LAST SYNC</span>
-        <span class="uptime-text">1 min ago</span>
-      </div>
-      <div class="status-row">
-        <span class="status-key">BATTERY</span>
-        <span class="chip chip-green">85%</span>
-      </div>
-      <div class="status-row">
-        <span class="status-key">UPTIME</span>
-        <span class="uptime-text">4d 12h 30m</span>
-      <div class="esp32-icon">
-        <div class="esp32-meta microcontroller">MICROCONTROLLER</div>
-        <div class="esp32-meta model">ESP32</div>
-        <div class="esp32-meta specs">240 MHz · 520KB SRAM</div>
-      </div>
-      <div class="esp32-icon esp32-icon-compact">
-        <div class="esp32-meta small-muted">MICROCONTROLLER</div>
-        <div class="esp32-meta esp32-compact-accent">ESP32</div>
-        <div class="esp32-meta small-muted">240 MHz · 520KB SRAM</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ROW 3: COMMANDS -->
-  <div class="card">
-    <div class="card-title">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M0 3a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3zm9.5 5.5h-3a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1zm-6.354-.354a.5.5 0 1 0 .708.708l2-2a.5.5 0 0 0 0-.708l-2-2a.5.5 0 1 0-.708.708L4.793 6.5 3.146 8.146z"/></svg>
-      COMMANDS &amp; ACTIONS
-    </div>
-    <div class="commands-grid">
-      <button class="cmd-btn" onclick="toast('Irrigación manual Zona 1 activada')">
-        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 16a5 5 0 0 0 5-5c0-2.762-5-11-5-11S3 8.238 3 11a5 5 0 0 0 5 5z"/></svg>
-        MANUAL IRRIGATION (ZONE 1)
-      </button>
-      <button class="cmd-btn" onclick="toast('Actualización de firmware iniciada')">
-        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z"/></svg>
-        UPDATE ESP32 FIRMWARE
-      </button>
-      <button class="cmd-btn" onclick="toast('Irrigación manual Zona 2 activada')">
-        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 16a5 5 0 0 0 5-5c0-2.762-5-11-5-11S3 8.238 3 11a5 5 0 0 0 5 5z"/></svg>
-        MANUAL IRRIGATION (ZONE 2)
-      </button>
-      <button class="cmd-btn danger" onclick="if(confirm('¿Confirmar reinicio del sistema?')) toast('Sistema reiniciando...')">
-        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/><path fill-rule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"/></svg>
-        SYSTEM RESET
-      </button>
-      <div class="toggle-row col-1-2">
-        <span class="toggle-label">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm0 1a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8z"/></svg>
-          LED INDICATOR
-        </span>
-        <label class="toggle" for="ledToggle">
-          <input id="ledToggle" type="checkbox" checked onchange="toast(this.checked ? 'LED activado' : 'LED desactivado')" title="Toggle LED indicator on or off">
-          <span class="slider"></span>
-        </label>
-      </div>
-    </div>
-  </div>
-
-</main>
+  </main>
 </div>
 
-<!-- FOOTER -->
+<!-- ── FOOTER ── -->
 <footer>
   <span>© 2024 ESP32 MANAGER</span>
   <div class="footer-links">
@@ -261,13 +243,12 @@
   </div>
 </footer>
 
-<!-- TOAST -->
+<!-- ── TOAST ── -->
 <div id="toast">
   <div class="dot"></div>
   <span id="toast-msg"></span>
 </div>
 
-<script>
-</script>
+<script src="script.js"></script>
 </body>
 </html>
